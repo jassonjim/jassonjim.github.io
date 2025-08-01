@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Precio de Bitcoin con Gráfica</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+        .container {
+            width: 90%;
+            max-width: 800px;
+            text-align: center;
+            padding: 40px;
+            border-radius: 12px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #ff9900;
+            margin-bottom: 20px;
+        }
+        .price-display {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+        }
+        .price {
+            font-size: 2em;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .price-label {
+            font-size: 1.2em;
+            color: #555;
+        }
+        .chart-container {
+            position: relative;
+            height: 40vh;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>₿ Precio de Bitcoin</h1>
+        
+        <div class="price-display">
+            <div class="price-container">
+                <p class="price-label">Precio Actual (USD)</p>
+                <p id="price-usd" class="price">$... cargando</p>
+            </div>
+            <div class="price-container">
+                <p class="price-label">Precio Actual (MXN)</p>
+                <p id="price-mxn" class="price">$... cargando</p>
+            </div>
+        </div>
+        
+        <h2>Gráfica de la Última Semana (USD)</h2>
+        <div class="chart-container">
+            <canvas id="bitcoinChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // --- FUNCIÓN PARA EL PRECIO ACTUAL ---
+        async function fetchCurrentBitcoinPrice() {
+            const apiUrl = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,mxn';
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                const priceUSD = data.bitcoin.usd;
+                const priceMXN = data.bitcoin.mxn;
+
+                const formattedPriceUSD = priceUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+                const formattedPriceMXN = priceMXN.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
+
+                document.getElementById('price-usd').textContent = formattedPriceUSD;
+                document.getElementById('price-mxn').textContent = formattedPriceMXN;
+            } catch (error) {
+                console.error('Error al obtener el precio actual:', error);
+                document.getElementById('price-usd').textContent = 'Error';
+                document.getElementById('price-mxn').textContent = 'Error';
+            }
+        }
+
+        // --- FUNCIÓN PARA LA GRÁFICA HISTÓRICA ---
+        async function fetchAndDrawChart() {
+            // 3. Usamos el endpoint de la API para datos históricos de los últimos 7 días
+            const historyApiUrl = 'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=7&interval=daily';
+            try {
+                const response = await fetch(historyApiUrl);
+                const data = await response.json();
+
+                // 4. Preparamos los datos para Chart.js
+                const labels = data.prices.map(pricePoint => {
+                    const date = new Date(pricePoint[0]);
+                    return date.toLocaleDateString('es-MX', { month: 'short', day: 'numeric' });
+                });
+
+                const prices = data.prices.map(pricePoint => pricePoint[1]);
+
+                // 5. Dibujamos la gráfica
+                const ctx = document.getElementById('bitcoinChart').getContext('2d');
+                
+                const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                gradient.addColorStop(0, 'rgba(255, 153, 0, 0.5)');
+                gradient.addColorStop(1, 'rgba(255, 153, 0, 0)');
+
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Precio (USD)',
+                            data: prices,
+                            borderColor: '#ff9900',
+                            borderWidth: 3,
+                            fill: true,
+                            backgroundColor: gradient,
+                            tension: 0.1 // Hace la línea ligeramente curva
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: false, // El eje Y no empieza en 0 para ver mejor las fluctuaciones
+                                ticks: {
+                                    callback: function(value, index, values) {
+                                        return '$' + value.toLocaleString('en-US');
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error al obtener los datos para la gráfica:', error);
+            }
+        }
+
+        // --- LLAMADAS INICIALES ---
+        fetchCurrentBitcoinPrice();
+        fetchAndDrawChart();
+
+        // Actualizar solo el precio actual cada minuto, la gráfica no necesita recargarse
+        setInterval(fetchCurrentBitcoinPrice, 60000);
+    </script>
+
+</body>
+</html>
