@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convertidor de Texto y Copiar</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 500px;
+        }
+        h2 {
+            margin-top: 0;
+        }
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+            resize: vertical;
+        }
+        .botones {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        button {
+            flex-grow: 1;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            text-align: center;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button.minusculas {
+            background-color: #28a745;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        p#mensaje {
+            margin-top: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Convertidor de Texto 📋</h2>
+        <textarea id="textoInput" placeholder="Ingresa tu texto aquí..."></textarea>
+        <div class="botones">
+            <button onclick="convertirYCopiar('mayusculas')">Convertir a MAYÚSCULAS y Copiar</button>
+            <button class="minusculas" onclick="convertirYCopiar('minusculas')">Convertir a minúsculas y Copiar</button>
+        </div>
+        <p id="mensaje"></p>
+    </div>
+
+    <script>
+        function convertirYCopiar(tipo) {
+            const textoInput = document.getElementById('textoInput');
+            const mensaje = document.getElementById('mensaje');
+            const textoOriginal = textoInput.value;
+
+            // --- Validación ---
+            if (textoOriginal.trim() === "") {
+                mensaje.textContent = "Por favor, ingresa algún texto.";
+                mensaje.className = 'error';
+                return;
+            }
+
+            let textoConvertido;
+            let mensajeExito;
+
+            // --- Conversión ---
+            if (tipo === 'mayusculas') {
+                textoConvertido = textoOriginal.toUpperCase();
+                mensajeExito = '¡Texto convertido a MAYÚSCULAS y copiado!';
+            } else {
+                textoConvertido = textoOriginal.toLowerCase();
+                mensajeExito = '¡Texto convertido a minúsculas y copiado!';
+            }
+
+            // --- Copiar al portapapeles ---
+            navigator.clipboard.writeText(textoConvertido)
+                .then(() => {
+                    mensaje.textContent = mensajeExito;
+                    mensaje.className = ''; // Quita la clase de error si existía
+                })
+                .catch(err => {
+                    mensaje.textContent = 'Error al copiar el texto: ' + err;
+                    mensaje.className = 'error';
+                    console.error('Error al copiar: ', err);
+                });
+        }
+    </script>
+</body>
+</html>
