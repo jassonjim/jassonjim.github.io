@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Convertidor y Copiador de Texto</title>
+    <title>Convertidor y Copiador de Texto Avanzado</title>
     <!-- Incluyendo Tailwind CSS para un diseño moderno y responsivo -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* Usando la fuente Inter para una mejor legibilidad */
@@ -21,24 +21,24 @@
         
         <!-- Encabezado de la aplicación -->
         <div class="text-center mb-6">
-            <h1 class="text-3xl font-bold text-gray-800">Convertidor y Copiador Rápido</h1>
-            <p class="text-gray-500 mt-2">Pega tu texto y presiona el botón para convertirlo, limpiarlo y copiarlo al portapapeles.</p>
+            <h1 class="text-3xl font-bold text-gray-800">Convertidor y Copiador Avanzado</h1>
+            <p class="text-gray-500 mt-2">Pega tu texto para limpiar, abreviar ciudades y copiar el resultado final.</p>
         </div>
 
         <!-- Área de texto para la entrada del usuario -->
         <div class="mb-4">
             <label for="inputText" class="block text-sm font-medium text-gray-700 mb-2">Texto a procesar:</label>
-            <textarea id="inputText" rows="8" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out" placeholder="Pega aquí el texto, por ejemplo: ARCA R1 CARRETERA ; ARCA R4 CARRETERA ; NAYAR TEPIC CARRETERA"></textarea>
+            <textarea id="inputText" rows="8" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out" placeholder="Pega aquí el texto. Por ejemplo: ARCA R1 GUADALAJARA CARRETERA ; NAYAR TEPIC CARRETERA"></textarea>
         </div>
 
         <!-- Botón para ejecutar la conversión y copiado -->
         <button id="convertAndCopyButton" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out shadow-sm">
-            Convertir y Copiar
+            Convertir, Abreviar y Copiar
         </button>
 
         <!-- Mensaje de confirmación de copiado -->
         <div id="copySuccessMessage" class="text-center text-green-600 text-sm mt-4 font-medium opacity-0 transition-opacity duration-300">
-            ¡Texto convertido y copiado al portapapeles!
+            ¡Texto procesado y copiado al portapapeles!
         </div>
     </div>
 
@@ -48,20 +48,42 @@
         const convertAndCopyButton = document.getElementById('convertAndCopyButton');
         const copySuccessMessage = document.getElementById('copySuccessMessage');
 
+        // Objeto con las abreviaturas de las ciudades
+        const cityReplacements = {
+            'COLIMA': 'COL',
+            'GUZMAN': 'CG',
+            'TECOMAN': 'TEC',
+            'MANZANILLO': 'MZO',
+            'VALLARTA': 'PV',
+            'TEPIC': 'TEP',
+            'MAZATLAN': 'MZT',
+            'CULIACAN': 'CLN',
+            'MOCHIS': 'MCH',
+            'GUADALAJARA': 'GDL'
+        };
+
         // Asignar la lógica al evento click del botón
         convertAndCopyButton.addEventListener('click', () => {
-            // 1. Obtener el texto del área de entrada
-            const originalText = inputText.value;
+            let processedText = inputText.value;
 
-            // 2. Eliminar la palabra "CARRETERA" sin importar mayúsculas/minúsculas (flag 'gi')
-            const textWithoutCarretera = originalText.replace(/CARRETERA/gi, '');
+            // 1. Nueva función: Reemplazar nombres de ciudades por abreviaturas
+            // Se itera sobre el objeto de reemplazos para aplicar cada regla
+            for (const city in cityReplacements) {
+                // Se crea una expresión regular para buscar el nombre de la ciudad,
+                // ignorando si está en mayúsculas o minúsculas (flag 'gi').
+                const regex = new RegExp(city, 'gi');
+                processedText = processedText.replace(regex, cityReplacements[city]);
+            }
 
-            // 3. Dividir el texto por ';', limpiar los espacios en blanco de cada parte y unir con '-'
-            const convertedText = textWithoutCarretera
-                .split(';') // Divide el string en un array usando ';' como separador
-                .map(part => part.trim()) // Elimina espacios en blanco al inicio y final de cada elemento del array
-                .filter(part => part.length > 0) // Elimina elementos vacíos que podrían quedar
-                .join('-'); // Une los elementos del array con un '-'
+            // 2. Eliminar la palabra "CARRETERA" (sin importar mayúsculas/minúsculas)
+            processedText = processedText.replace(/CARRETERA/gi, '');
+
+            // 3. Reemplazar todos los delimitadores (';', ',', 'y') por un solo espacio
+            // y luego limpiar espacios múltiples.
+            const convertedText = processedText
+                .replace(/\s*y\s*|,|;/gi, ' ') // Reemplaza 'y', ',', ';' por un espacio
+                .replace(/\s+/g, ' ')         // Colapsa espacios múltiples a uno solo
+                .trim();                      // Elimina espacios al inicio y al final
             
             // Si no hay texto convertido para copiar, no hacer nada
             if (!convertedText) return;
@@ -95,4 +117,5 @@
     </script>
 </body>
 </html>
+
 
