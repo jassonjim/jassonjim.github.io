@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Convertidor y Copiador de Texto Avanzado</title>
+    <title>Herramienta de Limpieza de Texto Multi-función</title>
     <!-- Incluyendo Tailwind CSS para un diseño moderno y responsivo -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,19 +21,38 @@
         
         <!-- Encabezado de la aplicación -->
         <div class="text-center mb-6">
-            <h1 class="text-3xl font-bold text-gray-800">Convertidor y Copiador Avanzado</h1>
-            <p class="text-gray-500 mt-2">Pega tu texto para limpiar, abreviar ciudades y copiar el resultado final.</p>
+            <h1 class="text-3xl font-bold text-gray-800">Herramienta de Limpieza Multi-función</h1>
+            <p class="text-gray-500 mt-2">Elige el tipo de limpieza, pega tu texto y copia el resultado.</p>
+        </div>
+
+        <!-- Selector del tipo de limpieza -->
+        <div class="mb-5">
+            <label class="block text-sm font-medium text-gray-700 mb-2">1. Selecciona el tipo de limpieza:</label>
+            <div class="flex items-center space-x-4 p-2 bg-gray-50 rounded-lg">
+                <div class="flex-1">
+                    <input type="radio" id="typeEmbotelladores" name="cleaningType" value="embotelladores" class="hidden peer" checked>
+                    <label for="typeEmbotelladores" class="block w-full text-center p-2 rounded-md cursor-pointer text-gray-600 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:font-semibold transition-colors duration-200">
+                        Limpiar Embotelladores
+                    </label>
+                </div>
+                <div class="flex-1">
+                    <input type="radio" id="typeZonas" name="cleaningType" value="zonas" class="hidden peer">
+                    <label for="typeZonas" class="block w-full text-center p-2 rounded-md cursor-pointer text-gray-600 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:font-semibold transition-colors duration-200">
+                        Abreviar Zonas
+                    </label>
+                </div>
+            </div>
         </div>
 
         <!-- Área de texto para la entrada del usuario -->
         <div class="mb-4">
-            <label for="inputText" class="block text-sm font-medium text-gray-700 mb-2">Texto a procesar:</label>
-            <textarea id="inputText" rows="8" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out" placeholder="Pega aquí el texto. Por ejemplo: ARCA R1 GUADALAJARA CARRETERA ; NAYAR TEPIC CARRETERA"></textarea>
+            <label for="inputText" class="block text-sm font-medium text-gray-700 mb-2">2. Pega el texto a procesar:</label>
+            <textarea id="inputText" rows="8" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out" placeholder="Pega aquí el texto..."></textarea>
         </div>
 
         <!-- Botón para ejecutar la conversión y copiado -->
-        <button id="convertAndCopyButton" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out shadow-sm">
-            Convertir, Abreviar y Copiar
+        <button id="processAndCopyButton" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out shadow-sm">
+            Procesar y Copiar
         </button>
 
         <!-- Mensaje de confirmación de copiado -->
@@ -45,77 +64,73 @@
     <script>
         // Obteniendo los elementos del DOM
         const inputText = document.getElementById('inputText');
-        const convertAndCopyButton = document.getElementById('convertAndCopyButton');
+        const processAndCopyButton = document.getElementById('processAndCopyButton');
         const copySuccessMessage = document.getElementById('copySuccessMessage');
 
         // Objeto con las abreviaturas de las ciudades
         const cityReplacements = {
-            'COLIMA': 'COL',
-            'GUZMAN': 'CG',
-            'TECOMAN': 'TEC',
-            'MANZANILLO': 'MZO',
-            'VALLARTA': 'PV',
-            'TEPIC': 'TEP',
-            'MAZATLAN': 'MZT',
-            'CULIACAN': 'CLN',
-            'MOCHIS': 'MCH',
-            'GUADALAJARA': 'GDL'
+            'COLIMA': 'COL', 'GUZMAN': 'CG', 'TECOMAN': 'TEC', 'MANZANILLO': 'MZO',
+            'VALLARTA': 'PV', 'TEPIC': 'TEP', 'MAZATLAN': 'MZT', 'CULIACAN': 'CLN',
+            'MOCHIS': 'MCH', 'GUADALAJARA': 'GDL'
         };
 
         // Asignar la lógica al evento click del botón
-        convertAndCopyButton.addEventListener('click', () => {
-            let processedText = inputText.value;
+        processAndCopyButton.addEventListener('click', () => {
+            const selectedType = document.querySelector('input[name="cleaningType"]:checked').value;
+            let originalText = inputText.value;
+            let convertedText = '';
 
-            // 1. Nueva función: Reemplazar nombres de ciudades por abreviaturas
-            // Se itera sobre el objeto de reemplazos para aplicar cada regla
-            for (const city in cityReplacements) {
-                // Se crea una expresión regular para buscar el nombre de la ciudad,
-                // ignorando si está en mayúsculas o minúsculas (flag 'gi').
-                const regex = new RegExp(city, 'gi');
-                processedText = processedText.replace(regex, cityReplacements[city]);
+            // Aplicar la lógica según el tipo seleccionado
+            if (selectedType === 'embotelladores') {
+                // LÓGICA PARA EMBOTELLADORES
+                convertedText = originalText
+                    .replace(/CARRETERA/gi, '') // Elimina la palabra "CARRETERA"
+                    .split(';') // Divide el texto por punto y coma
+                    .map(part => part.trim()) // Limpia espacios en blanco alrededor de cada parte
+                    .filter(part => part.length > 0) // Elimina partes vacías
+                    .join('-'); // Une las partes con un guion
+            } else if (selectedType === 'zonas') {
+                // LÓGICA PARA ZONAS
+                let processedText = originalText;
+                
+                // 1. Reemplazar nombres de ciudades por abreviaturas
+                for (const city in cityReplacements) {
+                    const regex = new RegExp(city, 'gi');
+                    processedText = processedText.replace(regex, cityReplacements[city]);
+                }
+
+                // 2. Eliminar "CARRETERA" (por si acaso)
+                processedText = processedText.replace(/CARRETERA/gi, '');
+                
+                // 3. Reemplazar delimitadores (';', ',', 'y') por espacios y limpiar
+                convertedText = processedText
+                    .replace(/\s*y\s*|,|;/gi, ' ') // Reemplaza 'y', ',', ';' por un espacio
+                    .replace(/\s+/g, ' ')         // Colapsa espacios múltiples a uno solo
+                    .trim();                      // Elimina espacios al inicio y al final
             }
-
-            // 2. Eliminar la palabra "CARRETERA" (sin importar mayúsculas/minúsculas)
-            processedText = processedText.replace(/CARRETERA/gi, '');
-
-            // 3. Reemplazar todos los delimitadores (';', ',', 'y') por un solo espacio
-            // y luego limpiar espacios múltiples.
-            const convertedText = processedText
-                .replace(/\s*y\s*|,|;/gi, ' ') // Reemplaza 'y', ',', ';' por un espacio
-                .replace(/\s+/g, ' ')         // Colapsa espacios múltiples a uno solo
-                .trim();                      // Elimina espacios al inicio y al final
             
             // Si no hay texto convertido para copiar, no hacer nada
             if (!convertedText) return;
 
-            // 4. Crear un textarea temporal para poder usar el comando 'copy'
+            // Copiar el resultado al portapapeles
             const tempTextArea = document.createElement('textarea');
             tempTextArea.value = convertedText;
             document.body.appendChild(tempTextArea);
             tempTextArea.select();
             
             try {
-                // Usar document.execCommand para compatibilidad en iframes
                 document.execCommand('copy');
-                
-                // Mostrar mensaje de éxito
                 copySuccessMessage.classList.remove('opacity-0');
-                
-                // Ocultar el mensaje después de 2 segundos
                 setTimeout(() => {
                     copySuccessMessage.classList.add('opacity-0');
                 }, 2000);
-
             } catch (err) {
                 console.error('No se pudo copiar el texto: ', err);
             }
             
-            // Eliminar el textarea temporal
             document.body.removeChild(tempTextArea);
         });
-
     </script>
 </body>
 </html>
-
 
