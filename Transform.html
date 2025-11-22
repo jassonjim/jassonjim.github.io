@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Transform 3.5</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome (conservado para otros iconos de la app) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Material Symbols Outlined (Variable Font que soporta FILL) -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Toast Notification Animation */
+        @keyframes slideIn {
+            from { transform: translateX(-50%) translateY(100%); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        .toast-enter {
+            animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Animación suave para el acordeón */
+        .accordion-transition {
+            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, margin-top 0.3s ease;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            margin-top: 0;
+        }
+        .accordion-open {
+            max-height: 120px;
+            opacity: 1;
+            margin-top: 1rem;
+        }
+
+        /* Ajuste de iconos Material Symbols */
+        .material-symbols-outlined {
+            font-size: 1.25rem;
+            line-height: 1;
+            vertical-align: middle;
+            /* AQUÍ ESTÁ EL CAMBIO CLAVE: FILL 1 activa la versión sólida */
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen p-4 flex flex-col items-center">
+
+    <div class="w-full max-w-xl space-y-4">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-2 px-1">
+            <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+                <i class="fa-solid fa-bolt text-indigo-600"></i> Transform
+            </h1>
+            <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded">v3.5</span>
+        </div>
+
+        <!-- Botones Principales -->
+        <div class="grid grid-cols-2 gap-4">
+            <!-- Botón Embotelladores (Icono local_drink sólido) -->
+            <button onclick="setLogic('embotelladores')" id="btn-embotelladores" 
+                class="w-full py-4 px-4 rounded-xl font-bold text-sm uppercase text-center transition-all duration-200 shadow-xl bg-indigo-600 text-white ring-2 ring-indigo-600 transform scale-[1.02] flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">local_drink</span>
+                <span>Embotelladores</span>
+            </button>
+            
+            <!-- Botón Zonas (Icono location_on sólido) -->
+            <button onclick="setLogic('zonas')" id="btn-zonas" 
+                class="w-full py-4 px-4 rounded-xl font-bold text-sm uppercase text-center transition-all duration-200 shadow-sm bg-white text-gray-500 border-2 border-gray-200 hover:border-indigo-300 hover:text-indigo-600 flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">location_on</span>
+                <span>Zonas</span>
+            </button>
+        </div>
+
+        <!-- GRUPO: Toggle + Opciones Extra -->
+        <div class="flex flex-col">
+            <!-- Toggle -->
+            <div class="flex justify-center">
+                <button onclick="toggleExtras()" id="toggle-btn" class="text-xs font-bold text-indigo-500 hover:text-indigo-700 flex items-center gap-1 transition-colors focus:outline-none py-1">
+                    <span>Más opciones</span>
+                    <i class="fa-solid fa-chevron-down transition-transform duration-200" id="toggle-icon"></i>
+                </button>
+            </div>
+
+            <!-- Panel Ocultable -->
+            <div id="extra-options" class="accordion-transition grid grid-cols-2 gap-4">
+                <button onclick="setLogic('upper')" id="btn-upper" 
+                    class="w-full py-3 px-4 rounded-xl font-bold text-sm uppercase text-center transition-all duration-200 shadow-sm bg-white text-gray-500 border-2 border-gray-200 hover:border-indigo-300 hover:text-indigo-600 flex items-center justify-center gap-2">
+                    <span>Mayúsculas</span>
+                </button>
+                
+                <button onclick="setLogic('lower')" id="btn-lower" 
+                    class="w-full py-3 px-4 rounded-xl font-bold text-sm uppercase text-center transition-all duration-200 shadow-sm bg-white text-gray-500 border-2 border-gray-200 hover:border-indigo-300 hover:text-indigo-600 flex items-center justify-center gap-2">
+                    <span>Minúsculas</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Área de Texto (Input) -->
+        <div class="relative group">
+            <textarea id="inputText" rows="6" 
+                class="w-full p-4 rounded-xl border-0 shadow-md focus:ring-2 focus:ring-indigo-500 transition-all resize-none font-mono text-sm placeholder-gray-400 bg-white"
+                placeholder="Pega tu texto aquí..."></textarea>
+            
+            <button onclick="clearInput()" class="absolute top-3 right-3 text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-gray-50 transition-colors" title="Borrar todo">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+            
+            <div class="absolute bottom-2 right-3 text-[10px] text-gray-300 font-semibold pointer-events-none select-none">
+                Press Enter ↵
+            </div>
+        </div>
+
+        <!-- Botón de Acción Principal -->
+        <button onclick="processAndCopy()" 
+            class="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xl py-4 rounded-xl shadow-xl transition-all duration-200 flex items-center justify-center gap-3 transform active:scale-[0.98]">
+            <i class="fa-solid fa-bolt"></i>
+            <span>Transform</span>
+        </button>
+
+    </div>
+
+    <!-- Notificación Toast -->
+    <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white p-4 rounded-2xl shadow-2xl flex flex-col items-center gap-3 hidden z-50 min-w-[300px] max-w-[90%] border border-gray-700">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-circle-check text-green-400 text-lg"></i>
+            <span class="font-bold text-sm">¡Copiado al portapapeles!</span>
+        </div>
+        <div class="bg-gray-800 rounded-lg px-3 py-2 w-full border border-gray-700">
+             <p id="toast-preview" class="text-xs text-gray-300 font-mono truncate text-center select-none italic"></p>
+        </div>
+    </div>
+
+    <textarea id="hiddenOutput" class="fixed top-0 left-0 opacity-0 pointer-events-none"></textarea>
+
+    <script>
+        // --- Estado Global ---
+        let currentLogic = 'embotelladores';
+        let extrasVisible = false;
+
+        // --- Estilos Constantes ---
+        const STYLE_ACTIVE = "w-full py-4 px-4 rounded-xl font-bold text-sm uppercase text-center transition-all duration-200 shadow-xl bg-indigo-600 text-white ring-2 ring-indigo-600 transform scale-[1.02] flex items-center justify-center gap-2";
+        const STYLE_INACTIVE = "w-full py-4 px-4 rounded-xl font-bold text-sm uppercase text-center transition-all duration-200 shadow-sm bg-white text-gray-500 border-2 border-gray-200 hover:border-indigo-300 hover:text-indigo-600 flex items-center justify-center gap-2";
+        
+        const STYLE_SEC_ACTIVE = "w-full py-3 px-4 rounded-xl font-bold text-sm uppercase text-center transition-all duration-200 shadow-xl bg-indigo-600 text-white ring-2 ring-indigo-600 transform scale-[1.02] flex items-center justify-center gap-2";
+        const STYLE_SEC_INACTIVE = "w-full py-3 px-4 rounded-xl font-bold text-sm uppercase text-center transition-all duration-200 shadow-sm bg-white text-gray-500 border-2 border-gray-200 hover:border-indigo-300 hover:text-indigo-600 flex items-center justify-center gap-2";
+
+        // --- Inicialización ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputEl = document.getElementById('inputText');
+            inputEl.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault(); 
+                    processAndCopy();   
+                }
+            });
+            inputEl.focus();
+        });
+
+        // --- Lógica de Toggle UI ---
+        function toggleExtras() {
+            extrasVisible = !extrasVisible;
+            const container = document.getElementById('extra-options');
+            const btnText = document.querySelector('#toggle-btn span');
+            const icon = document.getElementById('toggle-icon');
+
+            if (extrasVisible) {
+                container.classList.add('accordion-open');
+                btnText.textContent = "Menos opciones";
+                icon.style.transform = "rotate(180deg)";
+            } else {
+                container.classList.remove('accordion-open');
+                btnText.textContent = "Más opciones";
+                icon.style.transform = "rotate(0deg)";
+            }
+        }
+
+        // --- Selección de Lógica ---
+        function setLogic(logicType) {
+            currentLogic = logicType;
+            
+            const mainButtons = ['embotelladores', 'zonas'];
+            const secButtons = ['upper', 'lower'];
+            
+            // Manejar Botones Principales
+            mainButtons.forEach(btn => {
+                const el = document.getElementById(`btn-${btn}`);
+                if (btn === logicType) {
+                    el.className = STYLE_ACTIVE;
+                } else {
+                    el.className = STYLE_INACTIVE;
+                }
+            });
+
+            // Manejar Botones Secundarios
+            secButtons.forEach(btn => {
+                const el = document.getElementById(`btn-${btn}`);
+                if (btn === logicType) {
+                    el.className = STYLE_SEC_ACTIVE;
+                    if (!extrasVisible) toggleExtras();
+                } else {
+                    el.className = STYLE_SEC_INACTIVE;
+                }
+            });
+            
+            document.getElementById('inputText').focus();
+        }
+
+        function clearInput() {
+            document.getElementById('inputText').value = '';
+            document.getElementById('inputText').focus();
+        }
+
+        // --- Procesamiento y Copiado ---
+        function processAndCopy() {
+            const inputEl = document.getElementById('inputText');
+            const rawText = inputEl.value;
+
+            if (!rawText.trim()) {
+                inputEl.classList.add('ring-2', 'ring-red-400');
+                setTimeout(() => inputEl.classList.remove('ring-2', 'ring-red-400'), 300);
+                return;
+            }
+
+            let processedText = "";
+
+            switch (currentLogic) {
+                case 'embotelladores':
+                    processedText = logicEmbotelladores(rawText);
+                    break;
+                case 'zonas':
+                    processedText = logicZonas(rawText);
+                    break;
+                case 'upper':
+                    processedText = rawText.toUpperCase();
+                    break;
+                case 'lower':
+                    processedText = rawText.toLowerCase();
+                    break;
+            }
+
+            copyToClipboard(processedText);
+        }
+
+        // --- Reglas de Negocio ---
+        const zonesMapping = {
+            'COLIMA': 'COL', 'MANZANILLO': 'MZO', 'VALLARTA': 'PV',
+            'GUADALAJARA': 'GDL', 'TEPIC': 'TEP', 
+            'TECOMÁN': 'TEC', 'TECOMAN': 'TEC',
+            'CULIACÁN': 'CLN', 'CULIACAN': 'CLN',
+            'LOS MOCHIS': 'MCH', 'MOCHIS': 'MCH',
+            'MAZATLÁN': 'MZT', 'MAZATLAN': 'MZT',
+            'GUZMÁN': 'CG', 'GUZMAN': 'CG'
+        };
+        const allZonesValues = ['COL', 'MZO', 'PV', 'GDL', 'TEP', 'TEC', 'CLN', 'MCH', 'MZT', 'CG'];
+
+        function logicEmbotelladores(text) {
+            let items = text.split(';');
+            let processedItems = items.map(item => {
+                let clean = item.trim().toUpperCase(); 
+                clean = clean.replace(/\bCARRETERA\b/g, '').trim(); 
+                clean = clean.replace(/ELECTRO PLUS/g, 'ELECTROPLUS');
+                clean = clean.replace(/ELECTRO\s+PLUS/g, 'ELECTROPLUS');
+                return clean;
+            });
+            return processedItems.filter(i => i.length > 0).join('-');
+        }
+
+        function logicZonas(text) {
+            let items = text.split(';');
+            let foundCodes = new Set();
+            let orderedOutput = [];
+
+            items.forEach(item => {
+                let clean = item.trim().toUpperCase(); 
+                clean = clean.replace(/\bCARRETERA\b/g, '').trim(); 
+
+                if (clean.length > 0) {
+                    const code = zonesMapping[clean];
+                    if (code) {
+                        orderedOutput.push(code);
+                        foundCodes.add(code);
+                    } else {
+                        orderedOutput.push(clean);
+                    }
+                }
+            });
+
+            const hasAllZones = allZonesValues.every(val => foundCodes.has(val));
+            if (hasAllZones) return "TDZ";
+
+            return orderedOutput.join(' ');
+        }
+
+        // --- Utilidades ---
+        function copyToClipboard(text) {
+            const hiddenOutput = document.getElementById('hiddenOutput');
+            hiddenOutput.value = text;
+            
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => showToast(text))
+                .catch(() => fallbackCopy(hiddenOutput, text));
+            } else {
+                fallbackCopy(hiddenOutput, text);
+            }
+        }
+
+        function fallbackCopy(element, textVal) {
+            element.select();
+            element.setSelectionRange(0, 99999); 
+            document.execCommand('copy');
+            showToast(textVal);
+        }
+
+        function showToast(text) {
+            const toast = document.getElementById('toast');
+            const previewEl = document.getElementById('toast-preview');
+            
+            const maxLength = 35;
+            let preview = text.trim();
+            if (preview.length > maxLength) preview = preview.substring(0, maxLength) + '...';
+            
+            previewEl.textContent = `"${preview}"`;
+            toast.classList.remove('hidden');
+            toast.classList.add('toast-enter');
+            
+            setTimeout(() => {
+                toast.classList.add('hidden');
+                toast.classList.remove('toast-enter');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
