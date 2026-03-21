@@ -3,179 +3,470 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Precio de Bitcoin con Gráfica</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Bitcoin Tracker Auto-Theme</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
     <style>
+        /* Variables para el Modo Claro */
+        :root {
+            --bg-color: #f4f7f9;
+            --container-bg: #ffffff;
+            --text-main: #1a1a1a;
+            --text-muted: #8e8e93;
+            --accent-color: #059669; /* Verde Esmeralda */
+            --border-color: #e5e5ea;
+            --green-up: #059669; 
+            --red-down: #ff3b30;
+            --icon-hover: #1a1a1a;
+        }
+
+        /* Variables para el Modo Oscuro */
+        [data-theme="dark"] {
+            --bg-color: #000000;
+            --container-bg: linear-gradient(180deg, #1c1c1e 0%, #0c2b20 100%);
+            --text-main: #ffffff;
+            --text-muted: #8a8a93;
+            --accent-color: #5EEDBA; /* Verde Menta Neón */
+            --border-color: rgba(255, 255, 255, 0.08);
+            --green-up: #5EEDBA;
+            --red-down: #ff5e5e;
+            --icon-hover: #ffffff;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            margin: 0;
-            padding: 20px 0;
-            background-color: #f0f2f5;
-            color: #333;
+            transition: background-color 0.4s ease, color 0.4s ease;
         }
+
         .container {
+            background: var(--container-bg);
+            padding: 40px 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
             width: 90%;
             max-width: 800px;
             text-align: center;
-            padding: 40px;
-            border-radius: 12px;
-            background-color: #ffffff;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
+            border: 1px solid var(--border-color); 
+            transition: background 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease;
         }
-        h1 {
-            color: #ff9900;
-            margin-bottom: 20px;
+
+        .icon-btn {
+            color: var(--text-muted);
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.2s, transform 0.2s;
+            font-size: 24px;
         }
+
+        .icon-btn:hover { color: var(--icon-hover); }
+        .icon-btn:active { transform: scale(0.9); }
+
+        .theme-toggle-wrapper {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+        }
+
+        h1 { 
+            color: var(--text-main); 
+            margin-top: 0; 
+            font-size: 2.2em;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        h2 { 
+            color: var(--text-muted); 
+            font-size: 1.1em;
+            font-weight: 500;
+            border-bottom: 1px solid var(--border-color); 
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
         .price-display {
             display: flex;
             justify-content: space-around;
+            margin: 30px 0;
             flex-wrap: wrap;
-            margin-bottom: 40px;
         }
+
+        .price-block { margin: 10px; }
+        
         .price {
-            font-size: 2em;
-            margin: 10px 0;
-            font-weight: bold;
+            font-size: 3.2em;
+            font-weight: 700;
+            margin: 5px 0;
+            letter-spacing: -1.5px;
         }
-        .price-label {
+
+        .currency {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .change {
             font-size: 1.2em;
-            color: #555;
+            font-weight: 500;
+            display: inline-block;
+            margin-top: 4px;
         }
-        .chart-container {
-            position: relative;
-            height: 40vh;
-            width: 100%;
+
+        .up { color: var(--green-up); }
+        .down { color: var(--red-down); }
+
+        .controls {
+            margin-top: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .countdown {
+            font-size: 0.9em;
+            color: var(--text-muted);
+        }
+
+        .chart-container { 
+            margin-top: 20px; 
+            position: relative; 
+            height: 350px; 
+            width: 100%; 
+        }
+
+        .footer {
+            margin-top: 35px;
+            font-size: 0.8em;
+            color: var(--text-muted);
+            opacity: 0.6;
+        }
+
+        .error-msg {
+            color: var(--red-down);
+            font-weight: bold;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .loader {
+            border: 3px solid var(--border-color);
+            border-radius: 50%;
+            border-top: 3px solid var(--accent-color);
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 40px auto;
+        }
+
+        .spin-icon {
+            animation: spin 1s linear infinite;
+            color: var(--accent-color) !important;
+            pointer-events: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
     <div class="container">
-        <h1>₿ Precio de Bitcoin</h1>
+        <div class="theme-toggle-wrapper">
+            <span id="theme-toggle" class="material-symbols-rounded icon-btn" title="Cambiar tema">light_mode</span>
+        </div>
+
+        <h1>Bitcoin (BTC)</h1>
+        <h2>Precio en Tiempo Real</h2>
         
-        <div class="price-display">
-            <div class="price-container">
-                <p class="price-label">Precio Actual (USD)</p>
-                <p id="price-usd" class="price">$... cargando</p>
+        <div id="loader" class="loader"></div>
+        <div id="error-message" class="error-msg">Error al conectar. Intenta de nuevo en un minuto.</div>
+        
+        <div id="price-container" class="price-display" style="display: none;">
+            <div class="price-block">
+                <span class="currency">USD</span>
+                <p class="price" id="price-usd">--</p>
+                <span class="change" id="change-usd">--</span>
             </div>
-            <div class="price-container">
-                <p class="price-label">Precio Actual (MXN)</p>
-                <p id="price-mxn" class="price">$... cargando</p>
+            <div class="price-block">
+                <span class="currency">MXN</span>
+                <p class="price" id="price-mxn">--</p>
+                <span class="change" id="change-mxn">--</span>
             </div>
         </div>
-        
-        <h2>Gráfica de la Última Semana (USD)</h2>
+
+        <div class="controls">
+            <span id="refresh-btn" class="material-symbols-rounded icon-btn" title="Actualizar ahora">refresh</span>
+            <span class="countdown">Actualización en <span id="timer">05:00</span></span>
+        </div>
+
         <div class="chart-container">
-            <canvas id="bitcoinChart"></canvas>
+            <canvas id="bitcoin-chart"></canvas>
+        </div>
+
+        <div class="footer">
+            <p>Última actualización: <span id="last-updated">--</span></p>
         </div>
     </div>
 
     <script>
-        // --- FUNCIÓN PARA EL PRECIO ACTUAL ---
-        async function fetchCurrentBitcoinPrice() {
-            const apiUrl = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,mxn';
-            try {
-                const response = await fetch(apiUrl);
-                const data = await response.json();
-                const priceUSD = data.bitcoin.usd;
-                const priceMXN = data.bitcoin.mxn;
+        document.addEventListener('DOMContentLoaded', function () {
+            // 1. PRIMERO DECLARAMOS TODAS LAS VARIABLES Y ELEMENTOS DEL DOM
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            const priceUsdEl = document.getElementById('price-usd');
+            const priceMxnEl = document.getElementById('price-mxn');
+            const changeUsdEl = document.getElementById('change-usd');
+            const changeMxnEl = document.getElementById('change-mxn');
+            const lastUpdatedEl = document.getElementById('last-updated');
+            const loader = document.getElementById('loader');
+            const priceContainer = document.getElementById('price-container');
+            const errorMsg = document.getElementById('error-message');
+            const timerEl = document.getElementById('timer');
+            const refreshBtn = document.getElementById('refresh-btn');
+            const ctx = document.getElementById('bitcoin-chart').getContext('2d');
+            
+            let bitcoinChart = null; // Inicializamos la variable aquí arriba
+            let countdownInterval;
+            let timeRemaining = 300;
+            let lastLabels = [];
+            let lastDataPoints = [];
 
-                const formattedPriceUSD = priceUSD.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-                const formattedPriceMXN = priceMXN.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
-
-                document.getElementById('price-usd').textContent = formattedPriceUSD;
-                document.getElementById('price-mxn').textContent = formattedPriceMXN;
-            } catch (error) {
-                console.error('Error al obtener el precio actual:', error);
-                document.getElementById('price-usd').textContent = 'Error';
-                document.getElementById('price-mxn').textContent = 'Error';
-            }
-        }
-
-        // --- FUNCIÓN PARA LA GRÁFICA HISTÓRICA ---
-        async function fetchAndDrawChart() {
-            // 3. Usamos el endpoint de la API para datos históricos de los últimos 7 días
-            const historyApiUrl = 'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=7&interval=daily';
-            try {
-                const response = await fetch(historyApiUrl);
-                const data = await response.json();
-
-                // 4. Preparamos los datos para Chart.js
-                const labels = data.prices.map(pricePoint => {
-                    const date = new Date(pricePoint[0]);
-                    return date.toLocaleDateString('es-MX', { month: 'short', day: 'numeric' });
-                });
-
-                const prices = data.prices.map(pricePoint => pricePoint[1]);
-
-                // 5. Dibujamos la gráfica
-                const ctx = document.getElementById('bitcoinChart').getContext('2d');
+            // 2. LUEGO DEFINIMOS LAS FUNCIONES
+            
+            // Función para aplicar el tema visualmente
+            function applyTheme(theme) {
+                if (theme === 'dark') {
+                    document.body.setAttribute('data-theme', 'dark');
+                    themeToggleBtn.textContent = 'light_mode'; 
+                } else {
+                    document.body.removeAttribute('data-theme');
+                    themeToggleBtn.textContent = 'dark_mode'; 
+                }
                 
-                const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-                gradient.addColorStop(0, 'rgba(255, 153, 0, 0.5)');
-                gradient.addColorStop(1, 'rgba(255, 153, 0, 0)');
+                // Ahora esto es seguro porque bitcoinChart ya fue declarada
+                if(bitcoinChart !== null) {
+                    drawChart(lastLabels, lastDataPoints);
+                }
+            }
 
-                new Chart(ctx, {
+            // Formatear porcentaje
+            function formatChange(element, value) {
+                if (value === undefined || value === null) {
+                    element.style.display = 'none';
+                    return;
+                }
+                element.style.display = 'inline-block';
+                const formattedValue = Math.abs(value).toFixed(2) + '%';
+                if (value >= 0) {
+                    element.textContent = '↗ ' + formattedValue;
+                    element.className = 'change up';
+                } else {
+                    element.textContent = '↘ ' + formattedValue;
+                    element.className = 'change down';
+                }
+            }
+
+            // Gráfica adaptada (Con tonos Verdes para ambos temas)
+            function drawChart(labels, data) {
+                if (bitcoinChart) {
+                    bitcoinChart.destroy();
+                }
+
+                const isDark = document.body.getAttribute('data-theme') === 'dark';
+                
+                const lineColor = isDark ? '#5EEDBA' : '#059669'; 
+                const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+                const textColor = isDark ? '#8a8a93' : '#8e8e93';
+
+                let gradientFill = ctx.createLinearGradient(0, 0, 0, 350);
+                if (isDark) {
+                    gradientFill.addColorStop(0, 'rgba(94, 237, 186, 0.3)'); 
+                    gradientFill.addColorStop(1, 'rgba(94, 237, 186, 0)');   
+                } else {
+                    gradientFill.addColorStop(0, 'rgba(5, 150, 105, 0.2)');
+                    gradientFill.addColorStop(1, 'rgba(5, 150, 105, 0)');
+                }
+
+                bitcoinChart = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: labels,
                         datasets: [{
-                            label: 'Precio (USD)',
-                            data: prices,
-                            borderColor: '#ff9900',
-                            borderWidth: 3,
+                            label: 'Precio USD',
+                            data: data,
+                            borderColor: lineColor,
+                            backgroundColor: gradientFill,
                             fill: true,
-                            backgroundColor: gradient,
-                            tension: 0.1 // Hace la línea ligeramente curva
+                            tension: 0.4, 
+                            borderWidth: 2.5,
+                            pointRadius: 0, 
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: isDark ? '#1c1c1e' : '#ffffff',
+                            pointBorderColor: lineColor,
+                            pointBorderWidth: 2
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: false, // El eje Y no empieza en 0 para ver mejor las fluctuaciones
-                                ticks: {
-                                    callback: function(value, index, values) {
-                                        return '$' + value.toLocaleString('en-US');
+                        interaction: {
+                            intersect: false,
+                            mode: 'index',
+                        },
+                        plugins: { 
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: isDark ? '#2c2c2e' : '#ffffff',
+                                titleColor: isDark ? '#ffffff' : '#000000',
+                                bodyColor: lineColor,
+                                borderColor: gridColor,
+                                borderWidth: 1,
+                                padding: 12,
+                                displayColors: false,
+                                titleFont: { size: 13, weight: 'normal' },
+                                bodyFont: { size: 16, weight: 'bold' },
+                                callbacks: {
+                                    label: function(context) {
+                                        return '$' + context.parsed.y.toLocaleString('en-US');
                                     }
                                 }
                             }
                         },
-                        plugins: {
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        let label = context.dataset.label || '';
-                                        if (label) {
-                                            label += ': ';
-                                        }
-                                        if (context.parsed.y !== null) {
-                                            label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
-                                        }
-                                        return label;
-                                    }
-                                }
+                        scales: {
+                            x: { 
+                                grid: { 
+                                    color: gridColor, 
+                                    drawBorder: false,
+                                    borderDash: [5, 5] 
+                                }, 
+                                ticks: { color: textColor, font: {family: '-apple-system, sans-serif', size: 11} } 
+                            },
+                            y: { 
+                                grid: { display: false }, 
+                                ticks: { 
+                                    color: textColor, 
+                                    font: {family: '-apple-system, sans-serif', size: 11},
+                                    callback: value => '$' + value.toLocaleString() 
+                                } 
                             }
                         }
                     }
                 });
-            } catch (error) {
-                console.error('Error al obtener los datos para la gráfica:', error);
             }
-        }
 
-        // --- LLAMADAS INICIALES ---
-        fetchCurrentBitcoinPrice();
-        fetchAndDrawChart();
+            // Llamada a la API
+            async function fetchBitcoinData() {
+                try {
+                    if (priceUsdEl.textContent === '--') {
+                        loader.style.display = 'block';
+                        priceContainer.style.display = 'none';
+                    }
+                    errorMsg.style.display = 'none';
+                    refreshBtn.classList.add('spin-icon');
 
-        // Actualizar solo el precio actual cada minuto, la gráfica no necesita recargarse
-        setInterval(fetchCurrentBitcoinPrice, 60000);
+                    const pricePromise = fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,mxn&include_24hr_change=true');
+                    const historyPromise = fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=7&interval=daily');
+                    
+                    const [priceRes, historyRes] = await Promise.all([pricePromise, historyPromise]);
+
+                    if (priceRes.status === 429 || historyRes.status === 429) throw new Error('Límite de API');
+                    if (!priceRes.ok || !historyRes.ok) throw new Error('Error de red');
+
+                    const priceData = await priceRes.json();
+                    const historyData = await historyRes.json();
+
+                    priceUsdEl.textContent = `$${priceData.bitcoin.usd.toLocaleString('en-US')}`;
+                    priceMxnEl.textContent = `$${priceData.bitcoin.mxn.toLocaleString('es-MX')}`;
+
+                    formatChange(changeUsdEl, priceData.bitcoin.usd_24h_change);
+                    formatChange(changeMxnEl, priceData.bitcoin.mxn_24h_change);
+
+                    lastLabels = historyData.prices.map(p => new Date(p[0]).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }));
+                    lastDataPoints = historyData.prices.map(p => p[1]);
+
+                    drawChart(lastLabels, lastDataPoints);
+
+                    lastUpdatedEl.textContent = new Date().toLocaleString('es-ES', { dateStyle: 'long', timeStyle: 'short' });
+                    resetTimer();
+
+                    loader.style.display = 'none';
+                    priceContainer.style.display = 'flex';
+
+                } catch (error) {
+                    console.error(error);
+                    if (priceUsdEl.textContent === '--') loader.style.display = 'none';
+                    errorMsg.style.display = 'block';
+                } finally {
+                    refreshBtn.classList.remove('spin-icon');
+                }
+            }
+
+            // Temporizador
+            function resetTimer() {
+                clearInterval(countdownInterval);
+                timeRemaining = 300;
+                updateTimerDisplay();
+                countdownInterval = setInterval(() => {
+                    timeRemaining--;
+                    updateTimerDisplay();
+                    if (timeRemaining <= 0) fetchBitcoinData();
+                }, 1000);
+            }
+
+            function updateTimerDisplay() {
+                const minutes = Math.floor(timeRemaining / 60).toString().padStart(2, '0');
+                const seconds = (timeRemaining % 60).toString().padStart(2, '0');
+                timerEl.textContent = `${minutes}:${seconds}`;
+            }
+
+
+            // 3. FINALMENTE, INICIALIZAMOS LOS EVENTOS Y LA APP
+
+            // Lógica del Sistema Automático de Temas
+            const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+            
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                applyTheme(savedTheme);
+            } else {
+                applyTheme(prefersDarkScheme.matches ? 'dark' : 'light');
+            }
+
+            themeToggleBtn.addEventListener('click', () => {
+                let currentTheme = document.body.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+                let newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                
+                localStorage.setItem('theme', newTheme);
+                applyTheme(newTheme);
+            });
+
+            prefersDarkScheme.addEventListener('change', (e) => {
+                localStorage.removeItem('theme');
+                applyTheme(e.matches ? 'dark' : 'light');
+            });
+
+            refreshBtn.addEventListener('click', () => {
+                if (!refreshBtn.classList.contains('spin-icon')) fetchBitcoinData();
+            });
+
+            // Arrancamos la llamada a la API
+            fetchBitcoinData();
+        });
     </script>
-
 </body>
 </html>
