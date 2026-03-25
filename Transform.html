@@ -3,396 +3,600 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Transform 4.0</title>
+    <title>Transform 4.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- Material Symbols Outlined (FILL 1 activado) -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        
-        /* Toast Notification Animation */
-        @keyframes slideIn {
-            from { transform: translateX(-50%) translateY(100%); opacity: 0; }
-            to { transform: translateX(-50%) translateY(0); opacity: 1; }
-        }
-        .toast-enter {
-            animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        :root {
+            --bg: #f0f0f5;
+            --card: #ffffff;
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --primary-light: #eef2ff;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text: #111827;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --shadow: 0 4px 24px rgba(79,70,229,0.10);
         }
 
-        /* Animación suave para el acordeón */
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100svh;
+            padding: 1.25rem 1rem 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ── TOAST ── */
+        @keyframes toastIn {
+            from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+            to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
+        }
+        @keyframes toastOut {
+            from { transform: translateX(-50%) translateY(0);    opacity: 1; }
+            to   { transform: translateX(-50%) translateY(20px); opacity: 0; }
+        }
+        .toast-enter { animation: toastIn  0.3s cubic-bezier(0.175,0.885,0.32,1.275) forwards; }
+        .toast-exit  { animation: toastOut 0.25s ease-in forwards; }
+
+        /* ── ACCORDION ── */
         .accordion-transition {
-            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, margin-top 0.3s ease;
-            max-height: 0;
-            opacity: 0;
-            overflow: hidden;
-            margin-top: 0;
+            transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+            max-height: 0; opacity: 0; overflow: hidden; margin-top: 0;
         }
-        .accordion-open {
-            max-height: 120px;
-            opacity: 1;
-            margin-top: 1rem;
+        .accordion-open { max-height: 140px; opacity: 1; margin-top: 0.75rem; }
+
+        /* ── MATERIAL ICONS ── */
+        .material-symbols-outlined {
+            font-size: 1.15rem; line-height: 1; vertical-align: middle;
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
 
-        /* Ajuste de iconos Material Symbols Sólidos */
-        .material-symbols-outlined {
-            font-size: 1.25rem;
-            line-height: 1;
-            vertical-align: middle;
-            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        /* ── BOTONES MODO ── */
+        .mode-btn {
+            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+            width: 100%; padding: 0.875rem 1rem;
+            border-radius: 14px; font-weight: 700; font-size: 0.75rem;
+            text-transform: uppercase; letter-spacing: 0.04em;
+            transition: all 0.18s ease; cursor: pointer; border: 2px solid transparent;
+            position: relative; overflow: hidden;
+        }
+        .mode-btn.inactive {
+            background: var(--card); color: var(--text-muted);
+            border-color: var(--border); box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+        .mode-btn.inactive:hover {
+            border-color: #a5b4fc; color: var(--primary);
+            box-shadow: 0 2px 12px rgba(79,70,229,0.12);
+        }
+        .mode-btn.active {
+            background: var(--primary); color: #fff;
+            box-shadow: 0 4px 18px rgba(79,70,229,0.35);
+            transform: translateY(-1px);
+        }
+        .mode-btn.active::after {
+            content: '';
+            position: absolute; top: 6px; right: 8px;
+            width: 7px; height: 7px; border-radius: 50%;
+            background: rgba(255,255,255,0.6);
+        }
+
+        /* ── TEXTAREA ── */
+        #inputText {
+            width: 100%; padding: 1rem; padding-right: 2.75rem; padding-bottom: 2.5rem;
+            border-radius: 14px; border: 2px solid transparent;
+            box-shadow: var(--shadow); resize: none;
+            font-family: 'DM Mono', monospace; font-size: 0.8125rem; line-height: 1.6;
+            background: var(--card); color: var(--text);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+        #inputText::placeholder { color: #b0b7c3; }
+        #inputText:focus { border-color: #a5b4fc; box-shadow: 0 0 0 4px rgba(79,70,229,0.08), var(--shadow); }
+        #inputText.shake { animation: shake 0.3s ease; border-color: var(--danger) !important; }
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            25%      { transform: translateX(-5px); }
+            75%      { transform: translateX(5px); }
+        }
+
+        /* ── PREVIEW LIVE ── */
+        #livePreview {
+            font-family: 'DM Mono', monospace; font-size: 0.75rem;
+            color: var(--primary); background: var(--primary-light);
+            border-radius: 10px; padding: 0.5rem 0.75rem;
+            min-height: 2.25rem; line-height: 1.5;
+            word-break: break-all;
+            transition: opacity 0.2s;
+            border: 1.5px solid #c7d2fe;
+        }
+        #livePreview.empty { color: #c7d2fe; font-style: italic; border-color: #e0e7ff; background: #f8f9ff; }
+
+        /* ── BOTÓN TRANSFORM ── */
+        #transformBtn {
+            width: 100%; padding: 1rem;
+            border-radius: 14px; font-weight: 800; font-size: 1.1rem;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #fff; border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 0.75rem;
+            box-shadow: 0 6px 24px rgba(16,185,129,0.35);
+            transition: all 0.18s ease; letter-spacing: 0.02em;
+        }
+        #transformBtn:hover  { background: linear-gradient(135deg, #059669 0%, #047857 100%); box-shadow: 0 8px 28px rgba(16,185,129,0.45); transform: translateY(-1px); }
+        #transformBtn:active { transform: translateY(0) scale(0.98); box-shadow: 0 3px 12px rgba(16,185,129,0.3); }
+
+        /* ── HISTORIAL ── */
+        .history-item {
+            display: flex; align-items: center; gap: 0.5rem;
+            background: var(--card); border: 1.5px solid var(--border);
+            border-radius: 10px; padding: 0.5rem 0.75rem;
+            cursor: pointer; transition: all 0.15s ease;
+            min-width: 0;
+        }
+        .history-item:hover { border-color: #a5b4fc; box-shadow: 0 2px 10px rgba(79,70,229,0.12); }
+        .history-item .mode-tag {
+            font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+            background: var(--primary-light); color: var(--primary);
+            padding: 0.15rem 0.4rem; border-radius: 4px; flex-shrink: 0;
+        }
+        .history-item .result-text {
+            font-family: 'DM Mono', monospace; font-size: 0.7rem;
+            color: var(--text); white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis; flex: 1;
+        }
+        .history-item .copy-icon { color: var(--text-muted); font-size: 0.7rem; flex-shrink: 0; }
+
+        /* ── TOAST ── */
+        #toast {
+            position: fixed; bottom: 1.5rem; left: 50%;
+            transform: translateX(-50%);
+            background: #111827; color: #fff;
+            padding: 0.875rem 1rem;
+            border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+            display: flex; flex-direction: column; gap: 0.625rem;
+            z-index: 50; min-width: 300px; max-width: 90%;
+            border: 1px solid #374151;
+        }
+        #toast.hidden { display: none; }
+
+        /* ── BADGE CONTADOR ── */
+        #itemCount {
+            transition: all 0.2s;
+        }
+
+        /* ── SEPARADOR HISTORIAL ── */
+        .section-label {
+            font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.08em; color: var(--text-muted);
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 min-h-screen p-4 flex flex-col items-center">
+<body>
+    <div class="w-full max-w-xl space-y-3">
 
-    <div class="w-full max-w-xl space-y-4">
-        
         <!-- Header -->
-        <div class="flex items-center justify-between mb-2 px-1">
-            <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
-                <i class="fa-solid fa-bolt text-indigo-600"></i> Transform
+        <div class="flex items-center justify-between mb-1 px-1">
+            <h1 class="text-xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+                <i class="fa-solid fa-bolt text-indigo-600 text-base"></i> Transform
             </h1>
-            <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded">v4.0</span>
+            <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded">v3.8</span>
         </div>
 
-        <!-- Botones Principales (Ajustados a 3 opciones) -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <!-- Botón Embotelladores (Ancho completo en móvil, 1/3 en PC) -->
-            <button onclick="setLogic('embotelladores')" id="btn-embotelladores" 
-                class="col-span-2 sm:col-span-1 w-full py-4 px-2 rounded-xl font-bold text-xs sm:text-sm uppercase text-center transition-all duration-200 shadow-xl bg-indigo-600 text-white ring-2 ring-indigo-600 transform scale-[1.02] flex items-center justify-center gap-2">
+        <!-- Modos principales -->
+        <div class="grid grid-cols-3 gap-3">
+            <button class="mode-btn active" id="btn-embotelladores" onclick="setLogic('embotelladores')">
                 <span class="material-symbols-outlined">local_drink</span>
-                <span>Embotelladores</span>
+                <span>Embotell.</span>
             </button>
-            
-            <!-- Botón Zonas -->
-            <button onclick="setLogic('zonas')" id="btn-zonas" 
-                class="col-span-1 w-full py-4 px-2 rounded-xl font-bold text-xs sm:text-sm uppercase text-center transition-all duration-200 shadow-sm bg-white text-gray-500 border-2 border-gray-200 hover:border-indigo-300 hover:text-indigo-600 flex items-center justify-center gap-2">
+            <button class="mode-btn inactive" id="btn-zonas" onclick="setLogic('zonas')">
                 <span class="material-symbols-outlined">location_on</span>
                 <span>Zonas</span>
             </button>
-
-            <!-- Botón Agencias (NUEVO) -->
-            <button onclick="setLogic('agencias')" id="btn-agencias" 
-                class="col-span-1 w-full py-4 px-2 rounded-xl font-bold text-xs sm:text-sm uppercase text-center transition-all duration-200 shadow-sm bg-white text-gray-500 border-2 border-gray-200 hover:border-indigo-300 hover:text-indigo-600 flex items-center justify-center gap-2">
+            <button class="mode-btn inactive" id="btn-agencias" onclick="setLogic('agencias')">
                 <span class="material-symbols-outlined">storefront</span>
                 <span>Agencias</span>
             </button>
         </div>
 
-        <!-- GRUPO: Toggle + Opciones Extra -->
+        <!-- Toggle más opciones -->
         <div class="flex flex-col">
-            <!-- Toggle -->
             <div class="flex justify-center">
-                <button onclick="toggleExtras()" id="toggle-btn" class="text-xs font-bold text-indigo-500 hover:text-indigo-700 flex items-center gap-1 transition-colors focus:outline-none py-1">
-                    <span>Más opciones</span>
-                    <i class="fa-solid fa-chevron-down transition-transform duration-200" id="toggle-icon"></i>
+                <button onclick="toggleExtras()" id="toggle-btn"
+                    class="text-xs font-bold text-indigo-500 hover:text-indigo-700 flex items-center gap-1.5 transition-colors focus:outline-none py-1 px-2">
+                    <i class="fa-solid fa-sliders text-xs"></i>
+                    <span id="toggle-label">Más opciones</span>
+                    <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200" id="toggle-icon"></i>
                 </button>
             </div>
-
-            <!-- Panel Ocultable -->
-            <div id="extra-options" class="accordion-transition grid grid-cols-2 gap-4">
-                <button onclick="setLogic('upper')" id="btn-upper" 
-                    class="w-full py-3 px-4 rounded-xl font-bold text-sm uppercase text-center transition-all duration-200 shadow-sm bg-white text-gray-500 border-2 border-gray-200 hover:border-indigo-300 hover:text-indigo-600 flex items-center justify-center gap-2">
-                    <span>Mayúsculas</span>
+            <div id="extra-options" class="accordion-transition grid grid-cols-2 gap-3">
+                <button class="mode-btn inactive" id="btn-upper" onclick="setLogic('upper')">
+                    <i class="fa-solid fa-font text-xs"></i><span>Mayúsculas</span>
                 </button>
-                
-                <button onclick="setLogic('lower')" id="btn-lower" 
-                    class="w-full py-3 px-4 rounded-xl font-bold text-sm uppercase text-center transition-all duration-200 shadow-sm bg-white text-gray-500 border-2 border-gray-200 hover:border-indigo-300 hover:text-indigo-600 flex items-center justify-center gap-2">
-                    <span>Minúsculas</span>
+                <button class="mode-btn inactive" id="btn-lower" onclick="setLogic('lower')">
+                    <i class="fa-solid fa-font text-xs opacity-60"></i><span>Minúsculas</span>
                 </button>
             </div>
         </div>
 
-        <!-- Área de Texto (Input) -->
-        <div class="relative group">
-            <textarea id="inputText" rows="6" 
-                class="w-full p-4 rounded-xl border-0 shadow-md focus:ring-2 focus:ring-indigo-500 transition-all resize-none font-mono text-sm placeholder-gray-400 bg-white"
-                placeholder="Pega tu texto aquí..."></textarea>
-            
-            <button onclick="clearInput()" class="absolute top-3 right-3 text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-gray-50 transition-colors" title="Borrar todo">
-                <i class="fa-solid fa-trash-can"></i>
+        <!-- Textarea -->
+        <div class="relative">
+            <textarea id="inputText" rows="5"
+                placeholder="Pega tu texto aquí (separado por ; o ,)..."></textarea>
+
+            <!-- Botón limpiar -->
+            <button onclick="clearInput()" title="Borrar todo"
+                class="absolute top-3 right-3 text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-all">
+                <i class="fa-solid fa-trash-can text-xs"></i>
             </button>
-            
-            <div class="absolute bottom-2 right-3 text-[10px] text-gray-300 font-semibold pointer-events-none select-none">
-                Press Enter ↵
+
+            <!-- Footer del textarea: contador + hint -->
+            <div class="absolute bottom-0 left-0 right-0 flex items-center justify-between px-3 pb-2 pointer-events-none">
+                <span id="itemCount" class="text-[10px] font-semibold text-indigo-400 bg-indigo-50 px-1.5 py-0.5 rounded hidden"></span>
+                <span class="text-[10px] text-gray-300 font-medium ml-auto">Enter ↵</span>
             </div>
         </div>
 
-        <!-- Botón de Acción Principal -->
-        <button onclick="processAndCopy()" 
-            class="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold text-xl py-4 rounded-xl shadow-xl transition-all duration-200 flex items-center justify-center gap-3 transform active:scale-[0.98]">
+        <!-- Preview en vivo -->
+        <div>
+            <div class="flex items-center justify-between mb-1 px-0.5">
+                <span class="section-label">Vista previa</span>
+            </div>
+            <div id="livePreview" class="empty">El resultado aparecerá aquí…</div>
+        </div>
+
+        <!-- Botón Transform -->
+        <button id="transformBtn" onclick="processAndCopy()">
             <i class="fa-solid fa-bolt"></i>
-            <span>Transform</span>
+            <span>Transform & Copy</span>
         </button>
+
+        <!-- Historial -->
+        <div id="historySection" class="hidden">
+            <div class="flex items-center justify-between mb-1.5 px-0.5">
+                <span class="section-label">Historial reciente</span>
+                <button onclick="clearHistory()" class="text-[10px] text-gray-400 hover:text-red-400 font-semibold transition-colors">Limpiar</button>
+            </div>
+            <div id="historyList" class="space-y-1.5"></div>
+        </div>
 
     </div>
 
-    <!-- Notificación Toast -->
-    <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white p-4 rounded-2xl shadow-2xl flex flex-col items-center gap-3 hidden z-50 min-w-[300px] max-w-[90%] border border-gray-700">
-        <div class="flex items-center gap-2">
-            <i class="fa-solid fa-circle-check text-green-400 text-lg"></i>
-            <span class="font-bold text-sm">¡Copiado al portapapeles!</span>
+    <!-- Toast -->
+    <div id="toast" class="hidden">
+        <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-check text-green-400"></i>
+                <span class="font-bold text-sm">¡Copiado al portapapeles!</span>
+            </div>
+            <button id="toastCopyAgain"
+                class="text-xs font-bold text-indigo-300 hover:text-indigo-200 transition-colors whitespace-nowrap">
+                Copiar de nuevo
+            </button>
         </div>
-        <div class="bg-gray-800 rounded-lg px-3 py-2 w-full border border-gray-700">
-             <p id="toast-preview" class="text-xs text-gray-300 font-mono truncate text-center select-none italic"></p>
+        <div class="bg-gray-800 rounded-lg px-3 py-1.5 border border-gray-700">
+            <p id="toast-preview" class="text-xs text-gray-300 font-mono truncate text-center italic"></p>
         </div>
     </div>
 
     <textarea id="hiddenOutput" class="fixed top-0 left-0 opacity-0 pointer-events-none"></textarea>
 
     <script>
-        // --- Estado Global ---
+        // ── Estado ──
         let currentLogic = 'embotelladores';
         let extrasVisible = false;
+        let history = [];
+        let toastTimer = null;
+        let debounceTimer = null;
+        let lastProcessed = '';
 
-        // --- Estilos Constantes ---
-        const STYLE_ACTIVE = "col-span-1 w-full py-4 px-2 rounded-xl font-bold text-xs sm:text-sm uppercase text-center transition-all duration-200 shadow-xl bg-indigo-600 text-white ring-2 ring-indigo-600 transform scale-[1.02] flex items-center justify-center gap-2";
-        const STYLE_INACTIVE = "col-span-1 w-full py-4 px-2 rounded-xl font-bold text-xs sm:text-sm uppercase text-center transition-all duration-200 shadow-sm bg-white text-gray-500 border-2 border-gray-200 hover:border-indigo-300 hover:text-indigo-600 flex items-center justify-center gap-2";
-        
-        // Excepción para Embotelladores (más ancho en móvil)
-        const STYLE_EMBO_ACTIVE = "col-span-2 sm:col-span-1 w-full py-4 px-2 rounded-xl font-bold text-xs sm:text-sm uppercase text-center transition-all duration-200 shadow-xl bg-indigo-600 text-white ring-2 ring-indigo-600 transform scale-[1.02] flex items-center justify-center gap-2";
-        const STYLE_EMBO_INACTIVE = "col-span-2 sm:col-span-1 w-full py-4 px-2 rounded-xl font-bold text-xs sm:text-sm uppercase text-center transition-all duration-200 shadow-sm bg-white text-gray-500 border-2 border-gray-200 hover:border-indigo-300 hover:text-indigo-600 flex items-center justify-center gap-2";
-
-        const STYLE_SEC_ACTIVE = "w-full py-3 px-4 rounded-xl font-bold text-sm uppercase text-center transition-all duration-200 shadow-xl bg-indigo-600 text-white ring-2 ring-indigo-600 transform scale-[1.02] flex items-center justify-center gap-2";
-        const STYLE_SEC_INACTIVE = "w-full py-3 px-4 rounded-xl font-bold text-sm uppercase text-center transition-all duration-200 shadow-sm bg-white text-gray-500 border-2 border-gray-200 hover:border-indigo-300 hover:text-indigo-600 flex items-center justify-center gap-2";
-
-        // --- Inicialización ---
+        // ── Init ──
         document.addEventListener('DOMContentLoaded', () => {
             const inputEl = document.getElementById('inputText');
-            inputEl.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault(); 
-                    processAndCopy();   
-                }
+            inputEl.addEventListener('keydown', e => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); processAndCopy(); }
             });
+            inputEl.addEventListener('input', onInput);
             inputEl.focus();
+            document.getElementById('toastCopyAgain').addEventListener('click', () => {
+                if (lastProcessed) copyToClipboard(lastProcessed, false);
+            });
         });
 
-        // --- Lógica de Toggle UI ---
-        function toggleExtras() {
-            extrasVisible = !extrasVisible;
-            const container = document.getElementById('extra-options');
-            const btnText = document.querySelector('#toggle-btn span');
-            const icon = document.getElementById('toggle-icon');
+        // ── Input en vivo ──
+        function onInput() {
+            updateItemCount();
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(updatePreview, 120);
+        }
 
-            if (extrasVisible) {
-                container.classList.add('accordion-open');
-                btnText.textContent = "Menos opciones";
-                icon.style.transform = "rotate(180deg)";
+        function updateItemCount() {
+            const val = document.getElementById('inputText').value;
+            const badge = document.getElementById('itemCount');
+            if (!val.trim()) { badge.classList.add('hidden'); return; }
+            const items = val.split(/[;,]/).filter(i => i.trim().length > 0);
+            if (items.length > 1) {
+                badge.textContent = `${items.length} ítems`;
+                badge.classList.remove('hidden');
             } else {
-                container.classList.remove('accordion-open');
-                btnText.textContent = "Más opciones";
-                icon.style.transform = "rotate(0deg)";
+                badge.classList.add('hidden');
             }
         }
 
-        // --- Selección de Lógica ---
+        function updatePreview() {
+            const val = document.getElementById('inputText').value;
+            const preview = document.getElementById('livePreview');
+            if (!val.trim()) {
+                preview.textContent = 'El resultado aparecerá aquí…';
+                preview.classList.add('empty');
+                return;
+            }
+            const result = computeResult(val);
+            preview.textContent = result;
+            preview.classList.remove('empty');
+        }
+
+        // ── Toggle ──
+        function toggleExtras() {
+            extrasVisible = !extrasVisible;
+            const container = document.getElementById('extra-options');
+            const label = document.getElementById('toggle-label');
+            const icon = document.getElementById('toggle-icon');
+            if (extrasVisible) {
+                container.classList.add('accordion-open');
+                label.textContent = 'Menos opciones';
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                container.classList.remove('accordion-open');
+                label.textContent = 'Más opciones';
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // ── Selección de modo ──
+        const allBtns = ['embotelladores', 'zonas', 'agencias', 'upper', 'lower'];
         function setLogic(logicType) {
             currentLogic = logicType;
-            
-            const mainButtons = ['embotelladores', 'zonas', 'agencias'];
-            const secButtons = ['upper', 'lower'];
-            
-            // Manejar Botones Principales
-            mainButtons.forEach(btn => {
-                const el = document.getElementById(`btn-${btn}`);
-                if (btn === logicType) {
-                    el.className = (btn === 'embotelladores') ? STYLE_EMBO_ACTIVE : STYLE_ACTIVE;
-                } else {
-                    el.className = (btn === 'embotelladores') ? STYLE_EMBO_INACTIVE : STYLE_INACTIVE;
-                }
+            allBtns.forEach(id => {
+                const el = document.getElementById(`btn-${id}`);
+                el.className = `mode-btn ${id === logicType ? 'active' : 'inactive'}`;
             });
-
-            // Manejar Botones Secundarios
-            secButtons.forEach(btn => {
-                const el = document.getElementById(`btn-${btn}`);
-                if (btn === logicType) {
-                    el.className = STYLE_SEC_ACTIVE;
-                    if (!extrasVisible) toggleExtras();
-                } else {
-                    el.className = STYLE_SEC_INACTIVE;
-                }
-            });
-            
+            if (['upper', 'lower'].includes(logicType) && !extrasVisible) toggleExtras();
+            updatePreview();
             document.getElementById('inputText').focus();
         }
 
         function clearInput() {
             document.getElementById('inputText').value = '';
+            document.getElementById('itemCount').classList.add('hidden');
+            const preview = document.getElementById('livePreview');
+            preview.textContent = 'El resultado aparecerá aquí…';
+            preview.classList.add('empty');
             document.getElementById('inputText').focus();
         }
 
-        // --- Procesamiento y Copiado ---
+        // ── Procesamiento ──
+        function computeResult(text) {
+            switch (currentLogic) {
+                case 'embotelladores': return logicEmbotelladores(text);
+                case 'zonas':         return logicZonas(text);
+                case 'agencias':      return logicAgencias(text);
+                case 'upper':         return text.toUpperCase();
+                case 'lower':         return text.toLowerCase();
+            }
+        }
+
         function processAndCopy() {
             const inputEl = document.getElementById('inputText');
             const rawText = inputEl.value;
-
             if (!rawText.trim()) {
-                inputEl.classList.add('ring-2', 'ring-red-400');
-                setTimeout(() => inputEl.classList.remove('ring-2', 'ring-red-400'), 300);
+                inputEl.classList.add('shake');
+                setTimeout(() => inputEl.classList.remove('shake'), 350);
                 return;
             }
-
-            let processedText = "";
-
-            switch (currentLogic) {
-                case 'embotelladores':
-                    processedText = logicEmbotelladores(rawText);
-                    break;
-                case 'zonas':
-                    processedText = logicZonas(rawText);
-                    break;
-                case 'agencias':
-                    processedText = logicAgencias(rawText);
-                    break;
-                case 'upper':
-                    processedText = rawText.toUpperCase();
-                    break;
-                case 'lower':
-                    processedText = rawText.toLowerCase();
-                    break;
-            }
-
-            copyToClipboard(processedText);
+            const result = computeResult(rawText);
+            lastProcessed = result;
+            copyToClipboard(result, true);
+            addHistory(result, currentLogic);
         }
 
-        // --- REGLAS DE NEGOCIO: ZONAS ---
-        const zonesMapping = {
-            'COLIMA': 'COL', 'MANZANILLO': 'MZO', 'VALLARTA': 'PV',
-            'GUADALAJARA': 'GDL', 'TEPIC': 'TEP', 
-            'TECOMÁN': 'TEC', 'TECOMAN': 'TEC',
-            'CULIACÁN': 'CLN', 'CULIACAN': 'CLN',
-            'LOS MOCHIS': 'MCH', 'MOCHIS': 'MCH',
-            'MAZATLÁN': 'MZT', 'MAZATLAN': 'MZT',
-            'GUZMÁN': 'CG', 'GUZMAN': 'CG'
+        // ── Reglas Agencias ──
+        const agenciasMapping = {
+            'COLIMA':'COLIMA',
+            'GUZMÁN':'GUZMAN','GUZMAN':'GUZMAN',
+            'MANZANILLO':'MANZANILLO',
+            'LA HUERTA':'LA HUERTA',
+            'AUTLÁN':'AUTLAN','AUTLAN':'AUTLAN',
+            'GDL':'GDL',
+            'GUADALAJARA':'GUADALAJARA',
+            'TLAQUEPAQUE':'TLAQUEPAQUE',
+            'SAHUAYO':'SAHUAYO',
+            'COCULA':'COCULA',
+            'TEQUILA':'TEQUILA',
+            'VALLARTA':'VALLARTA',
+            'SANTIAGO':'SANTIAGO',
+            'TALPA':'TALPA',
+            'TOMATLAN':'TOMATLAN',
+            'IXTLAN':'IXTLAN',
+            'LA PEÑITA':'LA PENITA','LA PENITA':'LA PENITA',
+            'XALISCO':'XALISCO',
+            'ACAPONETA':'ACAPONETA',
+            'MAZATLÁN':'MAZATLAN','MAZATLAN':'MAZATLAN',
+            'LOS MOCHIS':'MOCHIS','MOCHIS':'MOCHIS',
+            'GUAMUCHIL':'GUAMUCHIL',
+            'CULIACÁN':'CULIACAN','CULIACAN':'CULIACAN'
         };
-        const allZonesValues = ['COL', 'MZO', 'PV', 'GDL', 'TEP', 'TEC', 'CLN', 'MCH', 'MZT', 'CG'];
+
+        // Términos de dos palabras que deben tratarse como una unidad
+        const agenciasMultiWord = ['LA HUERTA', 'LA PEÑITA', 'LA PENITA', 'LOS MOCHIS'];
+
+        function logicAgencias(text) {
+            // Normalizar input: quitar acentos para comparación robusta
+            function stripAccents(s) {
+                return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            }
+
+            // Construir versión sin acentos del mapping para lookup tolerante
+            const agenciasNorm = {};
+            for (const [k, v] of Object.entries(agenciasMapping)) {
+                agenciasNorm[stripAccents(k)] = v;
+            }
+
+            // Detectar separador: si hay ; o , usarlos, si no, separar por espacios
+            let items;
+            if (/[;,]/.test(text)) {
+                items = text.split(/[;,]/);
+            } else {
+                // Separar por espacios pero proteger multi-word primero
+                let normalized = text.trim().toUpperCase();
+                // reemplazar temporalmente multi-word con placeholder
+                const placeholders = [];
+                agenciasMultiWord.forEach((term, i) => {
+                    const termNorm = stripAccents(term);
+                    const re = new RegExp(termNorm.replace(/\s+/g, '\\s+'), 'gi');
+                    normalized = normalized.replace(re, `__MW${i}__`);
+                    placeholders[i] = term;
+                });
+                items = normalized.split(/\s+/).map(token => {
+                    const mwMatch = token.match(/^__MW(\d+)__$/);
+                    if (mwMatch) return placeholders[parseInt(mwMatch[1])];
+                    return token;
+                });
+            }
+
+            return items.map(item => {
+                let clean = item.trim().toUpperCase();
+                if (!clean.length) return null;
+                // lookup con acentos primero, luego sin acentos
+                return agenciasMapping[clean]
+                    || agenciasNorm[stripAccents(clean)]
+                    || clean;
+            }).filter(Boolean).join('-');
+        }
+
+        // ── Reglas ──
+        const zonesMapping = {
+            'COLIMA':'COL','MANZANILLO':'MZO','VALLARTA':'PV',
+            'GUADALAJARA':'GDL','TEPIC':'TEP',
+            'TECOMÁN':'TEC','TECOMAN':'TEC',
+            'CULIACÁN':'CLN','CULIACAN':'CLN',
+            'LOS MOCHIS':'MCH','MOCHIS':'MCH',
+            'MAZATLÁN':'MZT','MAZATLAN':'MZT',
+            'GUZMÁN':'CG','GUZMAN':'CG'
+        };
+        const allZonesValues = ['COL','MZO','PV','GDL','TEP','TEC','CLN','MCH','MZT','CG'];
+
+        function logicEmbotelladores(text) {
+            return text.split(/[;,]/).map(item => {
+                let clean = item.trim().toUpperCase();
+                clean = clean.replace(/\bCARRETERA\b/g, '').trim();
+                clean = clean.replace(/ELECTRO\s+PLUS/g, 'ELECTROPLUS');
+                return clean;
+            }).filter(i => i.length > 0).join('-');
+        }
 
         function logicZonas(text) {
             let items = text.split(/[;,]/);
-            let foundCodes = new Set();
-            let orderedOutput = [];
-
+            let foundCodes = new Set(), orderedOutput = [];
             items.forEach(item => {
-                let clean = item.trim().toUpperCase(); 
-                clean = clean.replace(/\bCARRETERA\b/g, '').trim(); 
-
-                if (clean.length > 0) {
-                    const code = zonesMapping[clean];
-                    if (code) {
-                        orderedOutput.push(code);
-                        foundCodes.add(code);
-                    } else {
-                        orderedOutput.push(clean);
-                    }
-                }
+                let clean = item.trim().toUpperCase().replace(/\bCARRETERA\b/g, '').trim();
+                if (!clean.length) return;
+                const code = zonesMapping[clean];
+                if (code) { orderedOutput.push(code); foundCodes.add(code); }
+                else orderedOutput.push(clean);
             });
-
-            // Regla TDZ exclusiva de Zonas
-            const hasAllZones = allZonesValues.every(val => foundCodes.has(val));
-            if (hasAllZones) return "TDZ";
-
+            if (allZonesValues.every(v => foundCodes.has(v))) return 'TDZ';
             return orderedOutput.join(' ');
         }
 
-        // --- REGLAS DE NEGOCIO: EMBOTELLADORES ---
-        function logicEmbotelladores(text) {
-            let items = text.split(/[;,]/);
-            let processedItems = items.map(item => {
-                let clean = item.trim().toUpperCase(); 
-                clean = clean.replace(/\bCARRETERA\b/g, '').trim(); 
-                clean = clean.replace(/ELECTRO PLUS/g, 'ELECTROPLUS');
-                clean = clean.replace(/ELECTRO\s+PLUS/g, 'ELECTROPLUS');
-                return clean;
+        // ── Historial ──
+        const modeLabels = { embotelladores: 'EMB', zonas: 'ZON', agencias: 'AGE', upper: 'MAY', lower: 'MIN' };
+
+        function addHistory(result, mode) {
+            history.unshift({ result, mode });
+            if (history.length > 5) history.pop();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const section = document.getElementById('historySection');
+            const list = document.getElementById('historyList');
+            if (!history.length) { section.classList.add('hidden'); return; }
+            section.classList.remove('hidden');
+            list.innerHTML = '';
+            history.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `
+                    <span class="mode-tag">${modeLabels[item.mode] || item.mode}</span>
+                    <span class="result-text">${escapeHtml(item.result)}</span>
+                    <i class="fa-regular fa-copy copy-icon"></i>`;
+                div.addEventListener('click', () => {
+                    copyToClipboard(item.result, true);
+                });
+                list.appendChild(div);
             });
-            return processedItems.filter(i => i.length > 0).join('-');
         }
 
-        // --- REGLAS DE NEGOCIO: AGENCIAS (NUEVO) ---
-        const agenciasMapping = {
-            'COLIMA': 'COLIMA',
-            'GUZMAN': 'GUZMAN',
-            'MANZANILLO': 'MANZANILLO',
-            'LA HUERTA': 'LA HUERTA',
-            'AUTLAN': 'AUTLAN',
-            'AUTLÁN': 'AUTLAN',
-            'GDL': 'GDL',
-            'GUADALAJARA': 'GUADALAJARA',
-            'TLAQUEPAQUE': 'TLAQUEPAQUE',
-            'SAHUAYO': 'SAHUAYO',
-            'COCULA': 'COCULA',
-            'TEQUILA': 'TEQUILA',
-            'VALLARTA': 'VALLARTA',
-            'SANTIAGO': 'SANTIAGO',
-            'TALPA': 'TALPA',
-            'TOMATLAN': 'TOMATLAN',
-            'IXTLAN': 'IXTLAN',
-            'LA PEÑITA': 'LA PENITA', // Mapeo de Ñ a N según regla
-            'LA PENITA': 'LA PENITA',
-            'XALISCO': 'XALISCO',
-            'ACAPONETA': 'ACAPONETA',
-            'MAZATLAN': 'MAZATLAN',
-            'MAZATLÁN': 'MAZATLAN',
-            'LOS MOCHIS': 'MOCHIS',
-            'MOCHIS': 'MOCHIS',
-            'GUAMUCHIL': 'GUAMUCHIL',
-            'CULIACAN': 'CULIACAN',
-            'CULIACÁN': 'CULIACAN'
-        };
-
-        // Preparamos Regex ordenando de más largo a más corto para evitar colisiones (Ej: "LOS MOCHIS" antes que "MOCHIS")
-        const agenciasKeys = Object.keys(agenciasMapping).sort((a, b) => b.length - a.length);
-        const agenciasRegex = new RegExp("\\b(" + agenciasKeys.join('|') + ")\\b", "gi");
-
-        function logicAgencias(text) {
-            // El motor Regex extrae automáticamente solo lo que coincide, ignorando el resto del texto sucio
-            const matches = text.match(agenciasRegex);
-            
-            if (!matches) return "";
-
-            // Convertimos a mayúsculas, mapeamos al formato limpio y unimos con guiones
-            return matches.map(m => agenciasMapping[m.toUpperCase()]).join('-');
+        function clearHistory() {
+            history = [];
+            renderHistory();
         }
 
-        // --- Utilidades ---
-        function copyToClipboard(text) {
+        function escapeHtml(str) {
+            return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        // ── Clipboard ──
+        function copyToClipboard(text, showToastFlag) {
             const hiddenOutput = document.getElementById('hiddenOutput');
             hiddenOutput.value = text;
-            
+            const done = () => { if (showToastFlag) showToast(text); };
             if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(text).then(() => showToast(text))
-                .catch(() => fallbackCopy(hiddenOutput, text));
+                navigator.clipboard.writeText(text).then(done).catch(() => { fallbackCopy(hiddenOutput); done(); });
             } else {
-                fallbackCopy(hiddenOutput, text);
+                fallbackCopy(hiddenOutput); done();
             }
         }
 
-        function fallbackCopy(element, textVal) {
-            element.select();
-            element.setSelectionRange(0, 99999); 
+        function fallbackCopy(el) {
+            el.select(); el.setSelectionRange(0, 99999);
             document.execCommand('copy');
-            showToast(textVal);
         }
 
+        // ── Toast con salida animada ──
         function showToast(text) {
             const toast = document.getElementById('toast');
             const previewEl = document.getElementById('toast-preview');
-            
-            const maxLength = 40; // Expandido un poco para Agencias
-            let preview = text.trim();
-            if (preview.length > maxLength) preview = preview.substring(0, maxLength) + '...';
-            
-            previewEl.textContent = `"${preview}"`;
-            toast.classList.remove('hidden');
+
+            if (toastTimer) { clearTimeout(toastTimer); }
+            toast.classList.remove('hidden', 'toast-exit');
+            void toast.offsetWidth; // reflow
             toast.classList.add('toast-enter');
-            
-            setTimeout(() => {
-                toast.classList.add('hidden');
+
+            const maxLen = 40;
+            let preview = text.trim();
+            if (preview.length > maxLen) preview = preview.substring(0, maxLen) + '…';
+            previewEl.textContent = `"${preview}"`;
+
+            toastTimer = setTimeout(() => {
                 toast.classList.remove('toast-enter');
-            }, 3000);
+                toast.classList.add('toast-exit');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                    toast.classList.remove('toast-exit');
+                }, 280);
+            }, 5000);
         }
     </script>
 </body>
