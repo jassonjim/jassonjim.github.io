@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Transform 4.2</title>
+    <title>Transform 4.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
@@ -180,57 +180,6 @@
             font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
             letter-spacing: 0.08em; color: var(--text-muted);
         }
-
-        /* ── AGENCIAS · término no reconocido ── */
-        .ag-bad {
-            color: var(--danger); font-weight: 700;
-            text-decoration: underline wavy var(--danger) 1px;
-            text-underline-offset: 3px;
-        }
-
-        /* ── AGENCIAS · aviso de no reconocidos ── */
-        #agenciasWarning {
-            display: flex; align-items: center; gap: 0.4rem;
-            font-size: 0.7rem; font-weight: 600; color: var(--danger);
-            background: #fef2f2; border: 1px solid #fecaca;
-            border-radius: 8px; padding: 0.35rem 0.6rem; margin-top: 0.375rem;
-        }
-        #agenciasWarning.hidden { display: none; }
-
-        /* ── AGENCIAS DETECTADAS (refuerzo visual) ── */
-        #agenciasPanel.hidden { display: none; }
-        .ag-table {
-            border: 1px solid #9ca3af; border-radius: 8px; overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-        }
-        .ag-row {
-            display: grid; grid-template-columns: 1fr 92px;
-            border-bottom: 1px solid #d1d5db;
-        }
-        .ag-row:last-child { border-bottom: none; }
-        .ag-name {
-            background: #ffffff; color: #111827;
-            padding: 0.375rem 0.625rem;
-            font-size: 0.72rem; font-weight: 600; letter-spacing: 0.01em;
-            display: flex; align-items: center; gap: 0.4rem;
-            min-width: 0;
-        }
-        /* Grupo Nayarit / Sinaloa — celeste, como en la tabla de referencia */
-        .ag-row.grupo-b .ag-name { background: #bfe3f7; }
-        .ag-code {
-            background: #6b7280; color: #ffffff;
-            font-family: 'DM Mono', monospace; font-size: 0.72rem; font-weight: 700;
-            display: flex; align-items: center; justify-content: center;
-            border-left: 1px solid #d1d5db;
-        }
-        /* Marca temporal: agencia aún no integrada a la tabla de adaptaciones */
-        .ag-flag {
-            font-size: 0.55rem; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.03em; white-space: nowrap;
-            background: #fef3c7; color: #92400e;
-            border: 1px solid #fde68a; border-radius: 4px;
-            padding: 0.05rem 0.3rem;
-        }
     </style>
 </head>
 <body>
@@ -241,7 +190,7 @@
             <h1 class="text-xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
                 <i class="fa-solid fa-bolt text-indigo-600 text-base"></i> Transform
             </h1>
-            <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded">v4.2</span>
+            <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded">v4.1</span>
         </div>
 
         <!-- Modos principales -->
@@ -304,21 +253,6 @@
                 <span class="section-label">Vista previa</span>
             </div>
             <div id="livePreview" class="empty">El resultado aparecerá aquí…</div>
-
-            <!-- Aviso de términos no reconocidos (solo modo Agencias) -->
-            <div id="agenciasWarning" class="hidden">
-                <i class="fa-solid fa-triangle-exclamation text-[10px]"></i>
-                <span id="agenciasWarningText"></span>
-            </div>
-        </div>
-
-        <!-- AGENCIAS DETECTADAS · refuerzo visual, no es un botón -->
-        <div id="agenciasPanel" class="hidden">
-            <div class="flex items-center justify-between mb-1 px-0.5">
-                <span class="section-label">Agencias detectadas</span>
-                <span id="agenciasCount" class="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded"></span>
-            </div>
-            <div class="ag-table" id="agenciasList"></div>
         </div>
 
         <!-- Botón Transform -->
@@ -342,9 +276,6 @@
     <div class="w-full mt-auto pt-8 pb-2 text-center">
         <p class="text-[10px] text-gray-400/95 font-medium leading-relaxed px-4">
             Embotelladores: ARCA R1-ARCA R3-ARCA R3 CUL-ARCA R4-NAYAR TEPIC-NAYAR VALLARTA-PROPIMEX-DEL FUERTE-ELECTROPLUS /             Zonas: COL MZO PV GDL TEP TEC CLN MCH MZT CG
-        </p>
-        <p class="text-[10px] text-gray-400/95 font-medium leading-relaxed px-4 mt-1">
-            Agencias (SEPTIEMBRE-26): ACM ACT AUT CCL CG CHA CLN COL GDL GML IXT LHT LPJ MCH MZO MZT PV SAH STG TQL TOM TPA TPQ XAL
         </p>
     </div>
 
@@ -400,9 +331,7 @@
             const val = document.getElementById('inputText').value;
             const badge = document.getElementById('itemCount');
             if (!val.trim()) { badge.classList.add('hidden'); return; }
-            const items = currentLogic === 'agencias'
-                ? parseAgencias(val).items
-                : val.split(/[;,]/).filter(i => i.trim().length > 0);
+            const items = val.split(/[;,]/).filter(i => i.trim().length > 0);
             if (items.length > 1) {
                 badge.textContent = `${items.length} ítems`;
                 badge.classList.remove('hidden');
@@ -414,9 +343,6 @@
         function updatePreview() {
             const val = document.getElementById('inputText').value;
             const preview = document.getElementById('livePreview');
-            // Agencias tiene su propio render (rojos + panel de detectadas)
-            if (currentLogic === 'agencias') { renderAgenciasUI(val); return; }
-            hideAgenciasUI();
             if (!val.trim()) {
                 preview.textContent = 'El resultado aparecerá aquí…';
                 preview.classList.add('empty');
@@ -453,10 +379,6 @@
                 el.className = `mode-btn ${id === logicType ? 'active' : 'inactive'}`;
             });
             if (['upper', 'lower'].includes(logicType) && !extrasVisible) toggleExtras();
-            document.getElementById('inputText').placeholder = logicType === 'agencias'
-                ? 'Pega los códigos de agencia (ej. SAH; TQL; CCL)...'
-                : 'Pega tu texto aquí (separado por ; o ,)...';
-            updateItemCount();
             updatePreview();
             document.getElementById('inputText').focus();
         }
@@ -467,7 +389,6 @@
             const preview = document.getElementById('livePreview');
             preview.textContent = 'El resultado aparecerá aquí…';
             preview.classList.add('empty');
-            hideAgenciasUI();
             document.getElementById('inputText').focus();
         }
 
@@ -496,13 +417,7 @@
             addHistory(result, currentLogic);
         }
 
-        // ══════════════════════════════════════════════════════════════════
-        // AGENCIAS · LÓGICA ANTERIOR — DESACTIVADA (2026-08-29)
-        // Se conserva íntegra por si hay que revertir. Ya NO se invoca desde
-        // computeResult(): la versión vigente es logicAgencias(), más abajo.
-        // Para reactivarla: en computeResult() cambiar la llamada del case
-        // 'agencias' por logicAgenciasLegacy(text).
-        // ══════════════════════════════════════════════════════════════════
+        // ── Reglas Agencias ──
         const agenciasMapping = {
             'COLIMA':'COLIMA',
             'GUZMÁN':'GUZMAN','GUZMAN':'GUZMAN',
@@ -532,7 +447,7 @@
         // Términos de dos palabras que deben tratarse como una unidad
         const agenciasMultiWord = ['LA HUERTA', 'LA PEÑITA', 'LA PENITA', 'LOS MOCHIS'];
 
-        function logicAgenciasLegacy(text) {
+        function logicAgencias(text) {
             // Normalizar input: quitar acentos para comparación robusta
             function stripAccents(s) {
                 return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -574,138 +489,6 @@
                     || agenciasNorm[stripAccents(clean)]
                     || clean;
             }).filter(Boolean).join('-');
-        }
-        // ═══════════════ fin lógica anterior desactivada ═══════════════
-
-        // ══════════════════════════════════════════════════════════════════
-        // AGENCIAS · LÓGICA VIGENTE — AGENCIAS-SEPTIEMBRE-26
-        // Los datos se limpian y se separan solo por espacio (igual que
-        // ZONAS). Vocabulario válido: los 24 códigos de la tabla. Cualquier
-        // término que no coincida EXACTAMENTE se marca en rojo y suma al
-        // contador de no reconocidos.
-        // ══════════════════════════════════════════════════════════════════
-        const AGENCIAS_TABLA = [
-            { code:'COL', name:'COLIMA',         grupo:'a' },
-            { code:'MZO', name:'MANZANILLO',     grupo:'a' },
-            { code:'LHT', name:'LA HUERTA',      grupo:'a' },
-            { code:'CG',  name:'GUZMAN',         grupo:'a' },
-            { code:'AUT', name:'AUTLAN',         grupo:'a' },
-            { code:'SAH', name:'SAHUAYO',        grupo:'a' },
-            { code:'PV',  name:'VALLARTA',       grupo:'a' },
-            { code:'LPJ', name:'LA PEÑITA DE J', grupo:'a' },
-            { code:'TPA', name:'TALPA',          grupo:'a' },
-            { code:'TOM', name:'TOMATLAN',       grupo:'a' },
-            { code:'GDL', name:'GUADALAJARA',    grupo:'a' },
-            { code:'TPQ', name:'TLAQUEPAQUE',    grupo:'a' },
-            { code:'CCL', name:'COCULA',         grupo:'a' },
-            { code:'TQL', name:'TEQUILA',        grupo:'a' },
-            { code:'XAL', name:'XALISCO',        grupo:'b' },
-            { code:'IXT', name:'IXTLAN DEL RIO', grupo:'b' },
-            { code:'STG', name:'SANTIAGO',       grupo:'b' },
-            { code:'ACT', name:'ACAPONETA TEP',  grupo:'b' },
-            { code:'MZT', name:'MAZATLAN',       grupo:'b' },
-            { code:'ACM', name:'ACAPONETA MZT',  grupo:'b' },
-            { code:'CLN', name:'CULIACAN',       grupo:'b' },
-            { code:'MCH', name:'MOCHIS',         grupo:'b' },
-            { code:'GML', name:'GUAMUCHIL',      grupo:'b' },
-            // Término válido, pero todavía sin fila en la tabla de
-            // adaptaciones. La marca 'fueraDeTabla' es solo un indicador;
-            // cuando se integre, basta con borrar esa propiedad.
-            { code:'CHA', name:'CHAPALA',        grupo:'a', fueraDeTabla:true }
-        ];
-
-        const AGENCIAS_INDEX = {};
-        AGENCIAS_TABLA.forEach(a => { AGENCIAS_INDEX[a.code] = a; });
-
-        function agStripAccents(s) {
-            return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        }
-
-        // Limpia y trocea la entrada. Acepta ; , saltos de línea, guiones o
-        // espacios; todo se normaliza a una lista de términos en mayúsculas.
-        function parseAgencias(text) {
-            const items = agStripAccents(text)
-                .toUpperCase()
-                .split(/[^A-Z0-9]+/)
-                .filter(t => t.length > 0)
-                .map(raw => {
-                    const agencia = AGENCIAS_INDEX[raw] || null;
-                    return { raw, ok: !!agencia, agencia };
-                });
-            return {
-                items,
-                output: items.map(i => i.raw).join(' '),
-                noReconocidos: items.filter(i => !i.ok).length
-            };
-        }
-
-        function logicAgencias(text) {
-            return parseAgencias(text).output;
-        }
-
-        // Pinta vista previa (rojos), aviso dinámico y AGENCIAS DETECTADAS.
-        function renderAgenciasUI(text) {
-            const preview  = document.getElementById('livePreview');
-            const warn     = document.getElementById('agenciasWarning');
-            const warnText = document.getElementById('agenciasWarningText');
-            const panel    = document.getElementById('agenciasPanel');
-            const list     = document.getElementById('agenciasList');
-            const count    = document.getElementById('agenciasCount');
-
-            const r = parseAgencias(text);
-
-            if (!r.items.length) {
-                preview.textContent = 'El resultado aparecerá aquí…';
-                preview.classList.add('empty');
-                warn.classList.add('hidden');
-                panel.classList.add('hidden');
-                return;
-            }
-
-            preview.classList.remove('empty');
-            preview.innerHTML = r.items
-                .map(i => i.ok
-                    ? escapeHtml(i.raw)
-                    : `<span class="ag-bad">${escapeHtml(i.raw)}</span>`)
-                .join(' ');
-
-            const n = r.noReconocidos;
-            if (n > 0) {
-                warnText.textContent = n === 1
-                    ? 'Hay 1 término no reconocido como AGENCIA'
-                    : `Hay ${n} términos no reconocidos como AGENCIA`;
-                warn.classList.remove('hidden');
-            } else {
-                warn.classList.add('hidden');
-            }
-
-            // Únicas, en orden de captura
-            const vistas = new Set();
-            const detectadas = [];
-            r.items.forEach(i => {
-                if (!i.ok || vistas.has(i.agencia.code)) return;
-                vistas.add(i.agencia.code);
-                detectadas.push(i.agencia);
-            });
-
-            if (!detectadas.length) { panel.classList.add('hidden'); return; }
-            panel.classList.remove('hidden');
-            count.textContent = detectadas.length === 1
-                ? '1 agencia'
-                : `${detectadas.length} agencias`;
-            list.innerHTML = detectadas.map(a => `
-                <div class="ag-row grupo-${a.grupo}">
-                    <span class="ag-name">
-                        <span class="truncate">${escapeHtml(a.name)}</span>
-                        ${a.fueraDeTabla ? '<span class="ag-flag" title="Aún no integrada a la tabla de adaptaciones">fuera de tabla</span>' : ''}
-                    </span>
-                    <span class="ag-code">${escapeHtml(a.code)}</span>
-                </div>`).join('');
-        }
-
-        function hideAgenciasUI() {
-            document.getElementById('agenciasWarning').classList.add('hidden');
-            document.getElementById('agenciasPanel').classList.add('hidden');
         }
 
         // ── Reglas ──
