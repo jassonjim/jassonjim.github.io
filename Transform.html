@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Transform 4.3</title>
+    <title>Transform 4.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
@@ -241,7 +241,7 @@
             <h1 class="text-xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
                 <i class="fa-solid fa-bolt text-indigo-600 text-base"></i> Transform
             </h1>
-            <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded">v4.3</span>
+            <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded">v4.4</span>
         </div>
 
         <!-- Modos principales -->
@@ -341,7 +341,7 @@
     <!-- Footer Disclaimer Discreto -->
     <div class="w-full mt-auto pt-8 pb-2 text-center">
         <p class="text-[10px] text-gray-400/95 font-medium leading-relaxed px-4">
-            Embotelladoras: ARCA R1→ARC1 · ARCA R3→ARC3 · ARCA R3 CUL→ARC3 CLN · ARCA R4→ARC4 · DEL FUERTE→DFTE · NAYAR TEPIC→NTEP · NAYAR VALLARTA→NPV · PROPIMEX→PMEX · ELECTROPLUS→ELEC /             Zonas: COL MZO PV GDL TEP TEC CLN MCH MZT CG
+            Embotelladoras: ARCA R1→ARC1 · ARCA R3→ARC3 · ARCA R3 CUL→ARC3-CLN · ARCA R4→ARC4 · DEL FUERTE→DFTE · NAYAR TEPIC→NTEP · NAYAR VALLARTA→NPV · PROPIMEX→PMEX · ELECTROPLUS→ELEC /             Zonas: COL MZO PV GDL TEP TEC CLN MCH MZT CG
         </p>
         <p class="text-[10px] text-gray-400/95 font-medium leading-relaxed px-4 mt-1">
             Agencias (SEPTIEMBRE-26): ACM ACT AUT CCL CG CHA CLN COL GDL GML IXT LHT LPJ MCH MZO MZT PV SAH STG TQL TOM TPA TPQ XAL
@@ -741,8 +741,9 @@
         // ═══════════════════════════════════════════════════════════════════
         // EMBOTELLADORAS · LÓGICA VIGENTE — traducción a clave (2026-09-02)
         // El texto ya no solo se limpia: cada término se TRADUCE a su clave
-        // según la tabla de equivalencias. Se sigue eliminando CARRETERA y la
-        // salida sigue unida por guion.
+        // según la tabla de equivalencias. Se sigue eliminando CARRETERA. La
+        // salida vigente va separada por espacio; la variante unida por guion
+        // queda disponible pero desactivada.
         // ═══════════════════════════════════════════════════════════════════
         const EMBOTELLADORAS_TABLA = {
             'ARCA R1':        'ARC1',
@@ -773,17 +774,22 @@
                 .filter(t => t.length > 0);
         }
 
-        // ACTIVA — salida unida por guion.
+        // ACTIVA — salida separada por espacio.
+        // Las claves de dos palabras se unen con guion (ARC3 CLN → ARC3-CLN)
+        // para que no se confundan con dos términos distintos.
         function logicEmbotelladores(text) {
-            return embotelladorasTraducidas(text).join('-');
+            return embotelladorasTraducidas(text)
+                .map(t => t.replace(/\s+/g, '-'))
+                .join(' ');
         }
 
-        // DESACTIVADA — misma traducción, salida separada por espacio.
-        // Queda lista pero computeResult() no la invoca. Para activarla:
-        // cambiar la llamada del case 'embotelladores' por
-        // logicEmbotelladoresEspacio(text).
-        function logicEmbotelladoresEspacio(text) {
-            return embotelladorasTraducidas(text).join(' ');
+        // DESACTIVADA — misma traducción, salida unida por guion. Aquí las
+        // claves de dos palabras conservan el espacio (ARC3 CLN), por la razón
+        // inversa: el guion ya es el separador entre términos.
+        // Para activarla: en computeResult() cambiar la llamada del case
+        // 'embotelladores' por logicEmbotelladoresGuion(text).
+        function logicEmbotelladoresGuion(text) {
+            return embotelladorasTraducidas(text).join('-');
         }
 
         function logicZonas(text) {
