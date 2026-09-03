@@ -61,7 +61,7 @@
     background:var(--bg);
     color:var(--ink);
     font-family:var(--mono);
-    font-size:clamp(12.5px,3.1vw,14px);
+    font-size:clamp(11px,calc(9.6px + 0.57vw),14px);
     line-height:1.55;
     -webkit-text-size-adjust:100%;
   }
@@ -242,6 +242,16 @@
     line-height:1.7;
     background:var(--panel);
   }
+  .keys summary{
+    cursor:pointer;
+    list-style:none;
+    color:var(--dim);
+    padding:.1rem 0 .2rem;
+  }
+  .keys summary::-webkit-details-marker{display:none}
+  .keys summary::before{content:"[+] ";color:var(--faint)}
+  .keys[open] summary::before{content:"[-] "}
+  .keys summary:hover{color:var(--accent)}
   .keys kbd{font:inherit;color:var(--ink)}
 
   #raw{
@@ -264,6 +274,26 @@
     white-space:pre-wrap;
     overflow-wrap:anywhere;
   }
+  /* ventanas angostas: menos margen y tipo mas chica, misma jerarquia */
+  @media (max-width:30rem){
+    :root{--gut:3.2ch}
+    .line{padding-inline:.42rem}
+    .bar{padding-inline:.42rem}
+    .out{padding-inline:.42rem}
+    .keys{padding-inline:.42rem}
+    .kill{padding-left:.6ch}
+  }
+  @media (max-width:20rem){
+    :root{--gut:3.1ch}
+    .line{padding-inline:.3rem}
+    .bar{padding-inline:.3rem}
+    .out{padding-inline:.3rem}
+    .keys{padding-inline:.3rem;padding-bottom:.6rem}
+    .kill{padding-left:.7ch}
+    .line--h1 .txt{font-size:1.1em}
+    .line--h2{margin-top:.7rem}
+  }
+
   @media (prefers-reduced-motion:reduce){
     *{animation:none!important;transition:none!important}
   }
@@ -290,9 +320,10 @@
       <button class="btn btn--go" id="save" title="Descargar .md">↓ .md</button>
     </div>
     <div class="out" id="out"></div>
-    <div class="keys">
-      <kbd>Enter</kbd> nueva línea · <kbd>Tab</kbd> tarea↔sección · <kbd>Backspace</kbd> borra la vacía · <kbd>Alt+↑↓</kbd> mover · <kbd>Cmd+Enter</kbd> marcar · pegar texto = importar lista
-    </div>
+    <details class="keys" id="keys">
+      <summary>teclas</summary>
+      <div><kbd>Enter</kbd> nueva línea · <kbd>Tab</kbd> tarea↔sección · <kbd>Backspace</kbd> borra la vacía · <kbd>Alt+↑↓</kbd> mover · <kbd>Cmd+Enter</kbd> marcar · pegar texto = importar lista</div>
+    </details>
     <div id="raw">
       <pre id="rawText"></pre>
       <button class="btn" id="rawClose">cerrar</button>
@@ -654,6 +685,9 @@
     doc={title:"",lines:[{id:uid(),type:"item",text:"",done:false}]};
     persist();render("title",true);say("lista vacía");
   });
+
+  var keysBox=document.getElementById("keys");
+  if(keysBox)keysBox.open=window.innerWidth>=480;
 
   render();
 })();
