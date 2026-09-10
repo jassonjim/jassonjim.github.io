@@ -767,11 +767,19 @@
   }
   /* formatBlock de Chrome se come el bloque anterior cuando el actual esta
      vacio, asi que con caret colapsado cambiamos la etiqueta a mano */
+  function limpiarBloque(blk){
+    if(!blk)return blk;
+    Array.prototype.slice.call(blk.childNodes).forEach(function(n){
+      if(n.nodeType===3&&n.nodeValue==="")blk.removeChild(n);
+    });
+    if(!blk.firstChild)blk.appendChild(document.createElement("br"));
+    return blk;
+  }
   function setBlockTag(blk,tag){
     if(!blk||blk.nodeName===tag||!blk.parentNode)return blk;
     var el=document.createElement(tag.toLowerCase());
     while(blk.firstChild)el.appendChild(blk.firstChild);
-    if(!el.firstChild)el.appendChild(document.createElement("br"));
+    limpiarBloque(el);
     blk.parentNode.replaceChild(el,blk);
     return el;
   }
@@ -785,7 +793,7 @@
     var collapsed=!sel||!sel.rangeCount||sel.isCollapsed;
     if(collapsed&&blk&&blk.parentNode&&blk!==docEl){
       var el=setBlockTag(blk,tag);
-      placeCaret(el,false);
+      placeCaret(el,!(el.textContent||"").trim());
       touch();
       syncTools();
       return;
@@ -915,8 +923,38 @@
     if(!act)return;
     e.preventDefault();
     probe.deleteContents();
-    if(act==="ul"||act==="ol")toggleList(act);
-    else format(act);
+    limpiarBloque(blk);
+    placeCaret(blk,true);
+    aplicarAuto(act);
+  }
+  /* Chrome rechaza execCommand llamado dentro del despacho de un evento
+     "input" (devuelve false), asi que el comando sale de ese turno */
+  function aplicarAuto(act){
+    setTimeout(function(){
+      if(act==="ul"||act==="ol")toggleList(act);
+      else format(act);
+    },0);
+  }
+  /* segunda via para el autoformato: hay entradas que no producen un keydown
+     con la tecla (IME, dictado, autocorrector movil, insertText) */
+  function autoformatInput(){
+    var blk=caretBlock();
+    if(!blk||blk.closest("pre")||blk.nodeName==="LI")return false;
+    var m=(blk.textContent||"").match(/^(#{1,3}|>|[-*+]|\d+[.)])[ \u00a0]/);
+    if(!m)return false;
+    var sel=window.getSelection();
+    if(!sel.rangeCount||!sel.isCollapsed)return false;
+    var r=sel.getRangeAt(0),probe=document.createRange();
+    probe.setStart(blk,0);
+    try{probe.setEnd(r.startContainer,r.startOffset);}catch(e){return false;}
+    if(probe.toString()!==m[0])return false;
+    var act=AUTO[m[1]]||(/\d/.test(m[1])?"ol":null);
+    if(!act)return false;
+    probe.deleteContents();
+    limpiarBloque(blk);
+    placeCaret(blk,true);
+    aplicarAuto(act);
+    return true;
   }
   docEl.addEventListener("keydown",function(e){
     var meta=e.metaKey||e.ctrlKey;
@@ -1017,7 +1055,10 @@
   });
 
   /* ── entradas ───────────────────────── */
-  docEl.addEventListener("input",touch);
+  docEl.addEventListener("input",function(){
+    if(autoformatInput())return;
+    touch();
+  });
   titleEl.addEventListener("input",function(){
     document.getElementById("fname").textContent="▓ "+slug();
     persist();
