@@ -72,11 +72,17 @@
     min-height:100dvh;
     display:flex;
     flex-direction:column;
-    max-width:66ch;
+    width:100%;
+    max-width:min(100%,104ch);
     margin:0 auto;
     border-inline:1px solid var(--rule);
   }
-  @media (max-width:68ch){.term{border-inline:0}}
+  /* ancho completo: usa todo el monitor */
+  .term[data-full="true"]{
+    max-width:none;
+    border-inline:0;
+  }
+  @media (max-width:900px){.term{border-inline:0}}
 
   /* ── barras ───────────────────────────── */
   .bar{
@@ -212,6 +218,13 @@
     color:var(--faint);
     pointer-events:none;
     max-width:52ch;
+  }
+  @media (min-width:60rem){
+    .head{padding-inline:1.1rem}
+    .doc{padding-left:calc(1.1rem + var(--gut));padding-right:1.1rem}
+    .bar{padding-inline:1.1rem}
+    .out{padding-inline:1.1rem}
+    .keys{padding-inline:1.1rem}
   }
   .doc > *{margin:0;position:relative}
   .doc > * + *{margin-top:.75em}
@@ -379,6 +392,7 @@
     <span class="spacer"></span>
     <span class="count" id="words">0 palabras</span>
     <span class="mins" id="mins"></span>
+    <button class="btn" type="button" id="full" title="Ancho completo" aria-label="Ancho completo" aria-pressed="false">↔</button>
   </header>
 
   <div class="bar bar--tools">
@@ -418,7 +432,7 @@
     <div class="out" id="out"></div>
     <details class="keys" id="keys">
       <summary>teclas</summary>
-      <div><kbd>Cmd+B/I/U</kbd> negrita, cursiva, subrayado · <kbd>Cmd+Shift+X</kbd> tachado · <kbd>Cmd+K</kbd> enlace · <kbd>Cmd+S</kbd> descarga · <kbd>Alt+↑↓</kbd> mover bloque · al inicio de línea: <kbd>##</kbd> <kbd>###</kbd> <kbd>-</kbd> <kbd>1.</kbd> <kbd>&gt;</kbd> + espacio · pegar markdown o texto con formato = importar</div>
+      <div><kbd>Cmd+B/I/U</kbd> negrita, cursiva, subrayado · <kbd>Cmd+Shift+X</kbd> tachado · <kbd>Cmd+K</kbd> enlace · <kbd>Cmd+S</kbd> descarga · <kbd>Alt+↑↓</kbd> mover bloque · al inicio de línea: <kbd>##</kbd> <kbd>###</kbd> <kbd>-</kbd> <kbd>1.</kbd> <kbd>&gt;</kbd> + espacio · <kbd>↔</kbd> (arriba a la derecha) ancho completo · pegar markdown o texto con formato = importar</div>
     </details>
     <div id="raw">
       <pre id="rawText"></pre>
@@ -1144,6 +1158,20 @@
   var st=load();
   titleEl.textContent=st?st.title:"";
   docEl.innerHTML=st&&st.md?mdToHtml(st.md):"<p><br></p>";
+  var term=document.querySelector(".term"),fullBtn=document.getElementById("full");
+  function setFull(on){
+    term.setAttribute("data-full",on?"true":"false");
+    fullBtn.setAttribute("aria-pressed",on?"true":"false");
+    try{localStorage.setItem(KEY+".full",on?"1":"0");}catch(e){}
+  }
+  fullBtn.addEventListener("mousedown",function(e){e.preventDefault();});
+  fullBtn.addEventListener("click",function(){
+    setFull(term.getAttribute("data-full")!=="true");
+  });
+  var anchoCompleto=false;
+  try{anchoCompleto=localStorage.getItem(KEY+".full")==="1";}catch(e){}
+  setFull(anchoCompleto);
+
   var keysBox=document.getElementById("keys");
   if(keysBox)keysBox.open=window.innerWidth>=480;
   tally();
