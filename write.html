@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="Procesador de textos ligero en estilo terminal: negritas, cursivas, subrayado, tachado, viñetas y numeración automática, con descarga a .md. Modo claro y oscuro automático.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#EAEBE4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#080B09" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20width='16'%20height='16'%20rx='2'%20fill='%23080b09'/%3E%3Cg%20stroke='%233fd37e'%20stroke-width='1.6'%20stroke-linecap='square'%3E%3Cpath%20d='M3.5%205h9'/%3E%3Cpath%20d='M3.5%208h9'/%3E%3Cpath%20d='M3.5%2011h5'/%3E%3C/g%3E%3C/svg%3E">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>wrt.md — procesador de textos a markdown</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Martian+Mono:wght@400;600&display=swap">
+<style>
+  :root{
+    --bg:#EAEBE4;
+    --panel:#E0E2D9;
+    --ink:#161C18;
+    --dim:#5C6761;
+    --faint:#9AA296;
+    --rule:#C7CCC0;
+    --accent:#0C7A44;
+    --accent-soft:rgba(12,122,68,.10);
+    --warn:#9E3418;
+    --glow:none;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --wide:"Martian Mono","JetBrains Mono",ui-monospace,monospace;
+    --gut:3.9ch;
+    --fs:clamp(11px,calc(9.6px + 0.57vw),14px);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#080B09;
+      --panel:#0E1310;
+      --ink:#CBD6CC;
+      --dim:#718075;
+      --faint:#333C35;
+      --rule:#1B221D;
+      --accent:#3FD37E;
+      --accent-soft:rgba(63,211,126,.13);
+      --warn:#E0663F;
+      --glow:0 0 12px rgba(63,211,126,.28);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#080B09;
+    --panel:#0E1310;
+    --ink:#CBD6CC;
+    --dim:#718075;
+    --faint:#333C35;
+    --rule:#1B221D;
+    --accent:#3FD37E;
+    --accent-soft:rgba(63,211,126,.13);
+    --warn:#E0663F;
+    --glow:0 0 12px rgba(63,211,126,.28);
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--mono);
+    font-size:var(--fs);
+    line-height:1.55;
+    -webkit-text-size-adjust:100%;
+  }
+  ::selection{background:var(--accent);color:var(--bg)}
+
+  .term{
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    max-width:66ch;
+    margin:0 auto;
+    border-inline:1px solid var(--rule);
+  }
+  @media (max-width:68ch){.term{border-inline:0}}
+
+  /* ── barras ───────────────────────────── */
+  .bar{
+    display:flex;
+    align-items:center;
+    gap:.6ch;
+    flex-wrap:wrap;
+    padding:.45rem .6rem;
+    background:var(--panel);
+    border-bottom:1px solid var(--rule);
+    font-family:var(--wide);
+    font-size:.78em;
+    letter-spacing:-.02em;
+  }
+  .bar--tools{
+    font-family:var(--mono);
+    font-size:.85em;
+    letter-spacing:0;
+    gap:.4ch;
+    padding-block:.35rem;
+    position:sticky;
+    top:0;
+    z-index:2;
+  }
+  .bar--btm{
+    border-bottom:0;
+    border-top:1px solid var(--rule);
+    position:sticky;
+    bottom:0;
+    font-family:var(--mono);
+    font-size:.85em;
+    letter-spacing:0;
+  }
+  .name{
+    color:var(--accent);
+    text-shadow:var(--glow);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    flex:0 1 auto;
+    min-width:4ch;
+  }
+  .caret{color:var(--accent);animation:blink 1.15s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .spacer{flex:1 1 auto;min-width:0}
+  .count{color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .mins{color:var(--faint);white-space:nowrap}
+  @media (max-width:24rem){.mins{display:none}}
+  .sep{
+    width:1px;
+    align-self:stretch;
+    background:var(--rule);
+    margin:0 .3ch;
+  }
+
+  /* ── botones ──────────────────────────── */
+  .btn{
+    all:unset;
+    cursor:pointer;
+    font:inherit;
+    color:var(--dim);
+    border:1px solid var(--rule);
+    padding:.12rem .55ch;
+    min-width:2.4ch;
+    text-align:center;
+    white-space:nowrap;
+    transition:color .12s,border-color .12s,background .12s;
+  }
+  .btn:hover{color:var(--accent);border-color:var(--accent)}
+  .btn[aria-pressed="true"]{
+    color:var(--bg);
+    background:var(--accent);
+    border-color:var(--accent);
+    text-shadow:none;
+  }
+  .btn--b{font-weight:700}
+  .btn--i{font-style:italic}
+  .btn--u{text-decoration:underline}
+  .btn--s{text-decoration:line-through}
+  .btn--go{color:var(--accent);border-color:var(--accent)}
+  .btn--go:hover{background:var(--accent);color:var(--bg);text-shadow:none}
+  .btn--warn:hover{color:var(--warn);border-color:var(--warn)}
+  :focus-visible{outline:1px solid var(--accent);outline-offset:2px}
+
+  /* ── título ───────────────────────────── */
+  .head{
+    display:flex;
+    align-items:flex-start;
+    padding:.7rem .6rem .1rem;
+  }
+  .head .tok{
+    flex:0 0 var(--gut);
+    width:var(--gut);
+    color:var(--accent);
+    text-shadow:var(--glow);
+    -webkit-user-select:none;
+    user-select:none;
+    padding-top:.15em;
+  }
+  .title{
+    flex:1 1 auto;
+    min-width:0;
+    outline:none;
+    caret-color:var(--accent);
+    overflow-wrap:anywhere;
+    font-family:var(--wide);
+    font-size:1.18em;
+    font-weight:600;
+    letter-spacing:-.03em;
+    line-height:1.3;
+  }
+  .title:empty::before{content:attr(data-ph);color:var(--faint)}
+
+  /* ── documento ────────────────────────── */
+  .buf{
+    flex:1 1 auto;
+    display:flex;
+    flex-direction:column;
+    cursor:text;
+  }
+  .doc{
+    position:relative;
+    flex:1 1 auto;
+    padding:.5rem .6rem 2rem calc(.6rem + var(--gut));
+    outline:none;
+    line-height:1.75;
+    caret-color:var(--accent);
+    overflow-wrap:break-word;
+  }
+  .doc[data-empty="true"]::before{
+    content:attr(data-ph);
+    position:absolute;
+    color:var(--faint);
+    pointer-events:none;
+    max-width:52ch;
+  }
+  .doc > *{margin:0;position:relative}
+  .doc > * + *{margin-top:.75em}
+
+  .doc h2,.doc h3{
+    font-family:var(--wide);
+    color:var(--accent);
+    text-shadow:var(--glow);
+    line-height:1.35;
+    margin-top:1.4em;
+  }
+  .doc h2{font-size:1.02em;font-weight:600;letter-spacing:-.02em}
+  .doc h3{
+    font-size:.82em;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.07em;
+  }
+  .doc > :first-child{margin-top:0}
+
+  .doc blockquote{
+    border-left:2px solid var(--faint);
+    padding-left:1.2ch;
+    color:var(--dim);
+  }
+  .doc pre{
+    background:var(--panel);
+    border:1px solid var(--rule);
+    padding:.5ch .8ch;
+    font:inherit;
+    font-size:.94em;
+    white-space:pre-wrap;
+    overflow-wrap:anywhere;
+    color:var(--ink);
+  }
+  .doc code{
+    background:var(--accent-soft);
+    padding:0 .35ch;
+    font:inherit;
+  }
+  .doc pre code{background:none;padding:0}
+  .doc ul,.doc ol{list-style:none;padding-left:0;margin:0}
+  .doc li{position:relative;margin-top:.15em}
+  .doc li > ul,.doc li > ol{padding-left:2.2ch;margin-top:.15em}
+  .doc a{color:var(--accent);text-decoration:underline}
+  .doc u{text-decoration:underline;text-decoration-thickness:1px}
+  .doc s,.doc strike,.doc del{
+    text-decoration:line-through;
+    text-decoration-color:var(--dim);
+    text-decoration-thickness:1px;
+  }
+  .doc hr{
+    border:0;
+    border-top:1px solid var(--rule);
+    margin-block:1.2em;
+  }
+
+  /* los tokens reales de markdown viven en la canaleta */
+  .doc h2::before,
+  .doc h3::before,
+  .doc blockquote::before,
+  .doc pre::before,
+  .doc hr::before,
+  .doc li::before{
+    position:absolute;
+    left:calc(-1 * var(--gut));
+    top:0;
+    font-family:var(--mono);
+    font-size:var(--fs);
+    font-weight:400;
+    line-height:1.75;
+    text-transform:none;
+    letter-spacing:0;
+    text-shadow:none;
+    color:var(--dim);
+    -webkit-user-select:none;
+    user-select:none;
+    pointer-events:none;
+  }
+  .doc h2::before{content:"##";color:var(--accent);opacity:.55}
+  .doc h3::before{content:"###";color:var(--accent);opacity:.55}
+  .doc blockquote::before{content:">"}
+  .doc pre::before{content:"```";top:.3ch}
+  .doc hr::before{content:"---";top:-.9em}
+  .doc ul > li::before{content:"-"}
+  .doc ol > li::before{content:counter(list-item) "."}
+
+  /* ── pie ──────────────────────────────── */
+  .out{
+    padding:.1rem .6rem .5rem;
+    color:var(--dim);
+    font-size:.85em;
+    min-height:1.6em;
+    background:var(--panel);
+  }
+  .out b{color:var(--accent);font-weight:400;text-shadow:var(--glow)}
+  .keys{
+    padding:0 .6rem 1rem;
+    color:var(--dim);
+    font-size:.8em;
+    line-height:1.7;
+    background:var(--panel);
+  }
+  .keys summary{
+    cursor:pointer;
+    list-style:none;
+    color:var(--dim);
+    padding:.1rem 0 .2rem;
+  }
+  .keys summary::-webkit-details-marker{display:none}
+  .keys summary::before{content:"[+] ";color:var(--faint)}
+  .keys[open] summary::before{content:"[-] "}
+  .keys summary:hover{color:var(--accent)}
+  .keys kbd{font:inherit;color:var(--ink)}
+
+  #raw{
+    display:none;
+    padding:.6rem;
+    border-top:1px solid var(--rule);
+    background:var(--panel);
+  }
+  #raw[data-open="true"]{display:block}
+  #raw pre{
+    margin:0 0 .5rem;
+    padding:.5rem;
+    max-height:40dvh;
+    overflow:auto;
+    border:1px solid var(--rule);
+    background:var(--bg);
+    color:var(--ink);
+    font:inherit;
+    font-size:.9em;
+    white-space:pre-wrap;
+    overflow-wrap:anywhere;
+  }
+
+  /* ventanas angostas: menos aire, misma jerarquía */
+  @media (max-width:30rem){
+    :root{--gut:3.6ch}
+    .head{padding-inline:.42rem}
+    .doc{padding-left:calc(.42rem + var(--gut));padding-right:.42rem}
+    .bar{padding-inline:.42rem}
+    .out{padding-inline:.42rem}
+    .keys{padding-inline:.42rem}
+  }
+  @media (max-width:20rem){
+    :root{--gut:3.4ch}
+    .head{padding-inline:.3rem}
+    .doc{padding-left:calc(.3rem + var(--gut));padding-right:.3rem}
+    .bar{padding-inline:.3rem}
+    .out{padding-inline:.3rem}
+    .keys{padding-inline:.3rem;padding-bottom:.6rem}
+    .title{font-size:1.1em}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+  }
+</style>
+</head>
+<body>
+
+<div class="term">
+  <header class="bar">
+    <span class="name" id="fname">▓ documento.md</span><span class="caret">▌</span>
+    <span class="spacer"></span>
+    <span class="count" id="words">0 palabras</span>
+    <span class="mins" id="mins"></span>
+  </header>
+
+  <div class="bar bar--tools">
+    <button class="btn btn--b" type="button" data-cmd="bold" title="Negrita (Cmd+B)" aria-label="Negrita">B</button>
+    <button class="btn btn--i" type="button" data-cmd="italic" title="Cursiva (Cmd+I)" aria-label="Cursiva">I</button>
+    <button class="btn btn--u" type="button" data-cmd="underline" title="Subrayado (Cmd+U)" aria-label="Subrayado">U</button>
+    <button class="btn btn--s" type="button" data-cmd="strikeThrough" title="Tachado (Cmd+Shift+X)" aria-label="Tachado">S</button>
+    <span class="sep"></span>
+    <button class="btn" type="button" data-blk="H2" title="Título de sección" aria-label="Título de sección">##</button>
+    <button class="btn" type="button" data-blk="H3" title="Subtítulo" aria-label="Subtítulo">###</button>
+    <button class="btn" type="button" data-list="ul" title="Viñetas" aria-label="Viñetas">-</button>
+    <button class="btn" type="button" data-list="ol" title="Numeración automática" aria-label="Numeración automática">1.</button>
+    <button class="btn" type="button" data-blk="BLOCKQUOTE" title="Cita" aria-label="Cita">&gt;</button>
+    <button class="btn" type="button" data-blk="PRE" title="Bloque de código" aria-label="Bloque de código">```</button>
+    <button class="btn" type="button" data-blk="P" title="Texto normal" aria-label="Texto normal">¶</button>
+    <span class="sep"></span>
+    <button class="btn" type="button" data-act="code" title="Código en línea" aria-label="Código en línea">`</button>
+    <button class="btn" type="button" data-act="link" title="Enlace (Cmd+K)" aria-label="Enlace">[]()</button>
+  </div>
+
+  <main class="buf" id="buf">
+    <div class="head">
+      <span class="tok">#</span>
+      <div class="title" id="title" contenteditable spellcheck="false" data-ph="título del documento" aria-label="Título"></div>
+    </div>
+    <div class="doc" id="doc" contenteditable spellcheck="true"
+         data-ph="Escribe aquí. Prueba «## » para un título, «- » para viñetas, «1. » para numerar."
+         aria-label="Documento"></div>
+  </main>
+
+  <footer>
+    <div class="bar bar--btm">
+      <span class="spacer"></span>
+      <button class="btn btn--warn" type="button" id="wipe" title="Borrar todo">rm</button>
+      <button class="btn btn--go" type="button" id="save" title="Descargar .md (Cmd+S)">↓ .md</button>
+    </div>
+    <div class="out" id="out"></div>
+    <details class="keys" id="keys">
+      <summary>teclas</summary>
+      <div><kbd>Cmd+B/I/U</kbd> negrita, cursiva, subrayado · <kbd>Cmd+Shift+X</kbd> tachado · <kbd>Cmd+K</kbd> enlace · <kbd>Cmd+S</kbd> descarga · <kbd>Alt+↑↓</kbd> mover bloque · al inicio de línea: <kbd>##</kbd> <kbd>###</kbd> <kbd>-</kbd> <kbd>1.</kbd> <kbd>&gt;</kbd> + espacio · pegar markdown o texto con formato = importar</div>
+    </details>
+    <div id="raw">
+      <pre id="rawText"></pre>
+      <button class="btn" type="button" id="rawClose">cerrar</button>
+    </div>
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var KEY="wrt.md.doc.v1";
+  var docEl=document.getElementById("doc");
+  var titleEl=document.getElementById("title");
+  var buf=document.getElementById("buf");
+  var out=document.getElementById("out");
+  var BLOCKS=/^(P|H1|H2|H3|H4|H5|H6|LI|PRE|BLOCKQUOTE|DIV)$/;
+  var MARK="\u0001";
+
+  try{document.execCommand("defaultParagraphSeparator",false,"p");}catch(e){}
+  try{document.execCommand("styleWithCSS",false,false);}catch(e){}
+
+  /* ── escapes ────────────────────────── */
+  function esc(t){
+    return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+  function mdEsc(t){
+    /* el espacio duro que mete execCommand se guarda como espacio normal */
+    return String(t).replace(/\u00a0/g," ").replace(/([\\`*~])/g,"\\$1");
+  }
+  function safeHref(h){
+    return /^(https?:\/\/|mailto:|#|\/|\.\/|\.\.\/)/i.test(String(h).trim());
+  }
+
+  /* ── HTML -> markdown ───────────────── */
+  function wrapMark(inner,mark){
+    var m=inner.match(/^(\s*)([\s\S]*?)(\s*)$/);
+    if(!m||!m[2])return inner;
+    return m[1]+mark+m[2]+mark+m[3];
+  }
+  function kidsMd(el){
+    var s="";
+    for(var i=0;i<el.childNodes.length;i++)s+=inlineMdOf(el.childNodes[i]);
+    return s;
+  }
+  function inlineMdOf(node){
+    if(node.nodeType===3)return mdEsc(node.nodeValue.replace(/\n/g," "));
+    if(node.nodeType!==1)return "";
+    var n=node.nodeName,inner=kidsMd(node);
+    if(n==="BR")return "  \n";
+    if(n==="B"||n==="STRONG")return wrapMark(inner,"**");
+    if(n==="I"||n==="EM")return wrapMark(inner,"*");
+    if(n==="U")return inner.trim()?"<u>"+inner+"</u>":inner;
+    if(n==="S"||n==="STRIKE"||n==="DEL")return wrapMark(inner,"~~");
+    if(n==="CODE")return inner.trim()?"`"+inner.replace(/\\([\\`*~])/g,"$1")+"`":inner;
+    if(n==="A"){
+      var h=node.getAttribute("href")||"";
+      return safeHref(h)?"["+inner.trim()+"]("+h.trim()+")":inner;
+    }
+    return inner;
+  }
+  function listMd(list,depth){
+    var rows=[],n=0,ord=list.nodeName==="OL",pad=new Array(depth+1).join("  ");
+    for(var i=0;i<list.children.length;i++){
+      var li=list.children[i];
+      if(li.nodeName!=="LI")continue;
+      n++;
+      var own="",subs=[];
+      for(var j=0;j<li.childNodes.length;j++){
+        var c=li.childNodes[j];
+        if(c.nodeType===1&&(c.nodeName==="UL"||c.nodeName==="OL"))subs.push(c);
+        else own+=inlineMdOf(c);
+      }
+      rows.push(pad+(ord?n+". ":"- ")+own.trim());
+      for(var k=0;k<subs.length;k++)rows.push(listMd(subs[k],depth+1));
+    }
+    return rows.join("\n");
+  }
+  function blockMd(node){
+    if(node.nodeType===3)return mdEsc(node.nodeValue).trim();
+    if(node.nodeType!==1)return "";
+    var n=node.nodeName;
+    if(n==="H1"||n==="H2")return "## "+kidsMd(node).trim();
+    if(/^H[3-6]$/.test(n))return "### "+kidsMd(node).trim();
+    if(n==="BLOCKQUOTE"){
+      var body;
+      if(node.querySelector("p,div")){
+        var rows=[];
+        for(var i=0;i<node.children.length;i++)rows.push(kidsMd(node.children[i]).trim());
+        body=rows.join("\n\n");
+      }else body=kidsMd(node).trim();
+      return body.split("\n").map(function(l){
+        l=l.replace(/\s+$/,"");
+        return l?"> "+l:">";
+      }).join("\n");
+    }
+    if(n==="PRE")return "```\n"+node.textContent.replace(/\n+$/,"")+"\n```";
+    if(n==="UL"||n==="OL")return listMd(node,0);
+    if(n==="HR")return "---";
+    if(n==="BR")return "";
+    var s=kidsMd(node).replace(/\s+$/,"");
+    return s.trim()?s:"";
+  }
+  function serialize(root){
+    var parts=[];
+    for(var i=0;i<root.childNodes.length;i++){
+      var b=blockMd(root.childNodes[i]);
+      if(b!=="")parts.push(b);
+    }
+    return parts.join("\n\n").replace(/\n{3,}/g,"\n\n").trim();
+  }
+
+  /* ── markdown -> HTML ───────────────── */
+  function inlineHtml(s){
+    s=esc(s);
+    var stash=[];
+    s=s.replace(/`([^`\n]+)`/g,function(m,a){
+      stash.push("<code>"+a+"</code>");
+      return MARK+(stash.length-1)+MARK;
+    });
+    s=s.replace(/&lt;u&gt;([\s\S]*?)&lt;\/u&gt;/gi,"<u>$1</u>");
+    s=s.replace(/\[([^\]\n]+)\]\(([^)\s]+)\)/g,function(m,txt,href){
+      return safeHref(href)?'<a href="'+href.replace(/"/g,"%22")+'">'+txt+"</a>":m;
+    });
+    s=s.replace(/\*\*\*([^*\n]+)\*\*\*/g,"<b><i>$1</i></b>");
+    s=s.replace(/\*\*([^*\n]+)\*\*/g,"<b>$1</b>");
+    s=s.replace(/(^|[^\\*])\*([^*\n]+)\*/g,"$1<i>$2</i>");
+    s=s.replace(/(^|[^\\])~~([^~\n]+)~~/g,"$1<s>$2</s>");
+    s=s.replace(/(^|[^\\\w])__([^_\n]+)__/g,"$1<b>$2</b>");
+    s=s.replace(/\\([\\`*~])/g,"$1");
+    s=s.replace(new RegExp(MARK+"(\\d+)"+MARK,"g"),function(m,i){return stash[+i];});
+    return s;
+  }
+  var RE_LIST=/^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
+  function isBlockStart(l){
+    return /^\s{0,3}#{1,6}\s/.test(l)||/^\s*>/.test(l)||RE_LIST.test(l)||
+           /^\s*```/.test(l)||/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(l)||/^\s*$/.test(l);
+  }
+  function buildList(items,pos,depth){
+    var ord=items[pos].ord,html=ord?"<ol>":"<ul>",k=pos,open=false;
+    while(k<items.length){
+      var it=items[k];
+      if(it.depth<depth)break;
+      if(it.depth>depth){
+        if(!open)break;
+        var sub=buildList(items,k,it.depth);
+        html+=sub.html;
+        k=sub.k;
+        continue;
+      }
+      if(it.ord!==ord)break;
+      if(open)html+="</li>";
+      html+="<li>"+inlineHtml(it.text.trim());
+      open=true;
+      k++;
+    }
+    if(open)html+="</li>";
+    html+=ord?"</ol>":"</ul>";
+    return {html:html,k:k};
+  }
+  function parseList(lines,i){
+    var items=[];
+    while(i<lines.length){
+      var m=lines[i].match(RE_LIST);
+      if(!m)break;
+      items.push({
+        depth:Math.floor(m[1].replace(/\t/g,"  ").length/2),
+        ord:/\d/.test(m[2]),
+        text:m[3]
+      });
+      i++;
+      while(i<lines.length&&/^\s{2,}\S/.test(lines[i])&&!RE_LIST.test(lines[i])&&!/^\s*```/.test(lines[i])){
+        items[items.length-1].text+=" "+lines[i].trim();
+        i++;
+      }
+    }
+    var html="",k=0,guard=0;
+    while(k<items.length&&guard++<9999){
+      var b=buildList(items,k,items[k].depth);
+      html+=b.html;
+      if(b.k===k)break;
+      k=b.k;
+    }
+    return {html:html,i:i};
+  }
+  function mdToHtml(md){
+    var lines=String(md).replace(/\r\n?/g,"\n").split("\n"),parts=[],i=0;
+    while(i<lines.length){
+      var L=lines[i];
+      if(/^\s*$/.test(L)){i++;continue;}
+      if(/^\s*```/.test(L)){
+        var code=[];
+        i++;
+        while(i<lines.length&&!/^\s*```/.test(lines[i])){code.push(lines[i]);i++;}
+        i++;
+        parts.push("<pre>"+esc(code.join("\n"))+"</pre>");
+        continue;
+      }
+      if(/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(L)){parts.push("<hr>");i++;continue;}
+      var h=L.match(/^\s{0,3}(#{1,6})\s+(.*)$/);
+      if(h){
+        var tag=h[1].length<=2?"h2":"h3";
+        parts.push("<"+tag+">"+inlineHtml(h[2].trim())+"</"+tag+">");
+        i++;
+        continue;
+      }
+      if(/^\s*>/.test(L)){
+        var q=[];
+        while(i<lines.length&&/^\s*>/.test(lines[i])){
+          q.push(lines[i].replace(/^\s*>\s?/,""));
+          i++;
+        }
+        parts.push("<blockquote>"+inlineHtml(q.join("\n")).replace(/(  )?\n/g,"<br>")+"</blockquote>");
+        continue;
+      }
+      if(RE_LIST.test(L)){
+        var r=parseList(lines,i);
+        parts.push(r.html);
+        i=r.i;
+        continue;
+      }
+      var p=[];
+      while(i<lines.length&&!isBlockStart(lines[i])){p.push(lines[i]);i++;}
+      parts.push("<p>"+inlineHtml(p.join("\n")).replace(/  \n/g,"<br>").replace(/\n/g," ")+"</p>");
+    }
+    return parts.join("")||"<p><br></p>";
+  }
+
+  /* ── estado ─────────────────────────── */
+  function load(){
+    try{
+      var raw=localStorage.getItem(KEY);
+      if(!raw)return null;
+      var d=JSON.parse(raw);
+      if(!d||typeof d.md!=="string")return null;
+      return {title:typeof d.title==="string"?d.title:"",md:d.md};
+    }catch(e){return null;}
+  }
+  var saveT;
+  function persist(){
+    clearTimeout(saveT);
+    saveT=setTimeout(function(){
+      try{
+        localStorage.setItem(KEY,JSON.stringify({title:titleEl.textContent,md:serialize(docEl)}));
+      }catch(e){}
+    },400);
+  }
+  function toMd(){
+    var t=(titleEl.textContent||"").trim()||"Documento";
+    return ("# "+t+"\n\n"+serialize(docEl)).trim()+"\n";
+  }
+  function slug(){
+    var s=(titleEl.textContent||"documento").toLowerCase();
+    s=s.normalize?s.normalize("NFD").replace(/[\u0300-\u036f]/g,""):s;
+    s=s.replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,48);
+    return (s||"documento")+".md";
+  }
+
+  /* ── cuentas ────────────────────────── */
+  function tally(){
+    var text=docEl.textContent||"";
+    var words=(text.match(/\S+/g)||[]).length;
+    var wEl=document.getElementById("words");
+    wEl.textContent=words+(words===1?" palabra":" palabras");
+    wEl.title=text.replace(/\s+/g," ").trim().length+" caracteres";
+    document.getElementById("mins").textContent="· "+Math.max(1,Math.round(words/200))+" min";
+    document.getElementById("fname").textContent="▓ "+slug();
+    docEl.setAttribute("data-empty",text.trim()===""?"true":"false");
+  }
+  function touch(){tally();persist();}
+
+  /* ── mensajes ───────────────────────── */
+  var msgT;
+  function say(html){
+    out.innerHTML=html?"> "+html:"";
+    clearTimeout(msgT);
+    if(html)msgT=setTimeout(function(){out.textContent="";},5000);
+  }
+
+  /* ── comandos ───────────────────────── */
+  /* execCommand deja dos suciedades en Chrome: listas anidadas dentro de un
+     <p> (HTML invalido que perderia las vinetas al exportar) y <span
+     style="font-size:..."> al mover contenido. Se limpian tras cada comando. */
+  var BLOQUES_SUELTOS=/^(UL|OL|BLOCKQUOTE|PRE|H[1-6])$/;
+  var EN_LINEA=/^(A|B|STRONG|I|EM|U|S|STRIKE|DEL|CODE|SPAN|BR|FONT|SUB|SUP|SMALL|MARK|IMG)$/;
+  function esSuelto(n){
+    return n&&(n.nodeType===3||(n.nodeType===1&&EN_LINEA.test(n.nodeName)));
+  }
+  function normalize(){
+    /* al quitar una lista, Chrome deja el contenido suelto en la raiz:
+       se reagrupa en parrafos para no perder el bloque ni su markdown */
+    var i=0;
+    while(i<docEl.childNodes.length){
+      var n=docEl.childNodes[i];
+      if(n.nodeType===3&&!(n.nodeValue||"").trim()){i++;continue;}
+      if(!esSuelto(n)){i++;continue;}
+      var par=document.createElement("p");
+      docEl.insertBefore(par,n);
+      while(par.nextSibling&&esSuelto(par.nextSibling))par.appendChild(par.nextSibling);
+      if(!(par.textContent||"").trim()&&!par.querySelector("br,img")){
+        docEl.removeChild(par);
+      }else{
+        i=Array.prototype.indexOf.call(docEl.childNodes,par)+1;
+        continue;
+      }
+    }
+    Array.prototype.slice.call(docEl.children).forEach(function(el){
+      if(el.nodeName!=="P"&&el.nodeName!=="DIV")return;
+      var ultimo=null;
+      Array.prototype.slice.call(el.children).forEach(function(c){
+        if(BLOQUES_SUELTOS.test(c.nodeName)){
+          docEl.insertBefore(c,el);
+          ultimo=c;
+        }
+      });
+      if(!ultimo||(el.textContent||"").trim()||!el.parentNode)return;
+      var sel=window.getSelection();
+      var caretAdentro=!!(sel&&sel.anchorNode&&el.contains(sel.anchorNode));
+      el.parentNode.removeChild(el);
+      if(caretAdentro)placeCaret(ultimo.querySelector("li,p,div")||ultimo,false);
+    });
+    /* una lista nunca vive dentro de un bloque de codigo */
+    Array.prototype.slice.call(docEl.querySelectorAll("pre ul,pre ol")).forEach(function(l){
+      var pre=l.closest("pre"),txt=l.textContent;
+      l.parentNode.replaceChild(document.createTextNode(txt),l);
+      if(pre)placeCaret(pre,false);
+    });
+    /* el diseno no usa estilos en linea: lo que agrega execCommand se descarta */
+    Array.prototype.slice.call(docEl.querySelectorAll("[style]")).forEach(function(el){
+      el.removeAttribute("style");
+    });
+    Array.prototype.slice.call(docEl.querySelectorAll("span,font")).forEach(function(sp){
+      if(sp.attributes.length)return;
+      var parent=sp.parentNode;
+      if(!parent)return;
+      while(sp.firstChild)parent.insertBefore(sp.firstChild,sp);
+      parent.removeChild(sp);
+    });
+  }
+  function cmd(name,val){
+    docEl.focus();
+    try{document.execCommand(name,false,val===undefined?null:val);}catch(e){}
+    normalize();
+    touch();
+    syncTools();
+  }
+  /* formatBlock de Chrome se come el bloque anterior cuando el actual esta
+     vacio, asi que con caret colapsado cambiamos la etiqueta a mano */
+  function setBlockTag(blk,tag){
+    if(!blk||blk.nodeName===tag||!blk.parentNode)return blk;
+    var el=document.createElement(tag.toLowerCase());
+    while(blk.firstChild)el.appendChild(blk.firstChild);
+    if(!el.firstChild)el.appendChild(document.createElement("br"));
+    blk.parentNode.replaceChild(el,blk);
+    return el;
+  }
+  function format(tag){
+    var blk=caretBlock();
+    if(blk&&blk.nodeName==="LI"){
+      try{document.execCommand(blk.closest("ol")?"insertOrderedList":"insertUnorderedList",false,null);}catch(e){}
+      blk=caretBlock();
+    }
+    var sel=window.getSelection();
+    var collapsed=!sel||!sel.rangeCount||sel.isCollapsed;
+    if(collapsed&&blk&&blk.parentNode&&blk!==docEl){
+      var el=setBlockTag(blk,tag);
+      placeCaret(el,false);
+      touch();
+      syncTools();
+      return;
+    }
+    cmd("formatBlock","<"+tag.toLowerCase()+">");
+  }
+  function caretBlock(){
+    var sel=window.getSelection();
+    if(!sel||!sel.rangeCount)return null;
+    var n=sel.getRangeAt(0).startContainer;
+    if(!docEl.contains(n))return null;
+    if(n.nodeType===3)n=n.parentNode;
+    while(n&&n!==docEl&&!BLOCKS.test(n.nodeName))n=n.parentNode;
+    return n&&n!==docEl?n:null;
+  }
+  function topBlock(){
+    var b=caretBlock();
+    if(!b)return null;
+    while(b.parentNode&&b.parentNode!==docEl)b=b.parentNode;
+    return b.parentNode===docEl?b:null;
+  }
+  function placeCaret(el,atStart){
+    if(!el)return;
+    var host=el.closest?el.closest('[contenteditable]'):null;
+    if(host&&host!==document.activeElement)host.focus();
+    var r=document.createRange(),sel=window.getSelection();
+    r.selectNodeContents(el);
+    r.collapse(!!atStart);
+    sel.removeAllRanges();
+    sel.addRange(r);
+  }
+  function atBlockEnd(blk){
+    var sel=window.getSelection();
+    if(!sel.rangeCount)return false;
+    var r=sel.getRangeAt(0),t=document.createRange();
+    t.selectNodeContents(blk);
+    try{t.setStart(r.endContainer,r.endOffset);}catch(e){return false;}
+    return t.toString().replace(/[\s\u200b]/g,"")==="";
+  }
+
+  function toggleBlock(tag){
+    var b=caretBlock();
+    if(b&&(b.nodeName===tag||(tag==="BLOCKQUOTE"&&b.closest("blockquote"))||(tag==="PRE"&&b.closest("pre"))))format("P");
+    else format(tag);
+  }
+  function toggleList(kind){
+    var b=caretBlock();
+    if(b&&b.closest("pre")){
+      say("un bloque de código no lleva listas — sal de él con \u2318Enter");
+      return;
+    }
+    cmd(kind==="ol"?"insertOrderedList":"insertUnorderedList");
+  }
+  function inlineCode(){
+    var sel=window.getSelection();
+    if(!sel||sel.isCollapsed||!docEl.contains(sel.anchorNode)){
+      say("selecciona el texto que va como código");
+      return;
+    }
+    cmd("insertHTML","<code>"+esc(sel.toString())+"</code>");
+  }
+  function addLink(){
+    var sel=window.getSelection();
+    if(!sel||sel.isCollapsed||!docEl.contains(sel.anchorNode)){
+      say("selecciona primero el texto del enlace");
+      return;
+    }
+    var url=window.prompt("URL del enlace:","https://");
+    if(!url)return;
+    if(!safeHref(url)){say("esa URL no es válida");return;}
+    cmd("createLink",url.trim());
+  }
+
+  /* ── barra de herramientas ──────────── */
+  var tools=document.querySelectorAll("[data-cmd],[data-blk],[data-list],[data-act]");
+  Array.prototype.forEach.call(tools,function(btn){
+    btn.addEventListener("mousedown",function(e){e.preventDefault();});
+    btn.addEventListener("click",function(){
+      if(btn.getAttribute("data-cmd"))cmd(btn.getAttribute("data-cmd"));
+      else if(btn.getAttribute("data-blk"))toggleBlock(btn.getAttribute("data-blk"));
+      else if(btn.getAttribute("data-list"))toggleList(btn.getAttribute("data-list"));
+      else if(btn.getAttribute("data-act")==="code")inlineCode();
+      else if(btn.getAttribute("data-act")==="link")addLink();
+    });
+  });
+  function state(name){
+    try{return document.queryCommandState(name);}catch(e){return false;}
+  }
+  function syncTools(){
+    var sel=window.getSelection();
+    var inDoc=!!(sel&&sel.anchorNode&&docEl.contains(sel.anchorNode));
+    var b=inDoc?caretBlock():null;
+    Array.prototype.forEach.call(tools,function(btn){
+      var on=false,c=btn.getAttribute("data-cmd"),l=btn.getAttribute("data-list"),k=btn.getAttribute("data-blk");
+      if(c)on=inDoc&&state(c);
+      else if(l)on=inDoc&&state(l==="ol"?"insertOrderedList":"insertUnorderedList");
+      else if(k){
+        var n=b?b.nodeName:"";
+        if(k==="P")on=(n==="P"||n==="DIV")&&!b.closest("blockquote")&&!b.closest("pre");
+        else if(k==="BLOCKQUOTE")on=!!(b&&b.closest("blockquote"));
+        else if(k==="PRE")on=!!(b&&b.closest("pre"));
+        else on=n===k;
+      }
+      btn.setAttribute("aria-pressed",on?"true":"false");
+    });
+  }
+  document.addEventListener("selectionchange",function(){
+    var sel=window.getSelection();
+    if(sel&&sel.anchorNode&&docEl.contains(sel.anchorNode))syncTools();
+  });
+
+  /* ── teclado ────────────────────────── */
+  var AUTO={"#":"H2","##":"H2","###":"H3",">":"BLOCKQUOTE","-":"ul","*":"ul","+":"ul"};
+  function autoformat(e){
+    var blk=caretBlock();
+    if(!blk||blk.closest("pre")||blk.nodeName==="LI")return;
+    var sel=window.getSelection();
+    if(!sel.rangeCount)return;
+    var r=sel.getRangeAt(0);
+    if(!r.collapsed)return;
+    var probe=document.createRange();
+    probe.setStart(blk,0);
+    try{probe.setEnd(r.startContainer,r.startOffset);}catch(err){return;}
+    var pre=probe.toString();
+    var act=AUTO[pre];
+    if(!act&&/^\d+[.)]$/.test(pre))act="ol";
+    if(!act)return;
+    e.preventDefault();
+    probe.deleteContents();
+    if(act==="ul"||act==="ol")toggleList(act);
+    else format(act);
+  }
+  docEl.addEventListener("keydown",function(e){
+    var meta=e.metaKey||e.ctrlKey;
+    var k=(e.key||"").toLowerCase();
+    if(meta&&!e.altKey){
+      if(k==="s"){e.preventDefault();saveMd();return;}
+      if(k==="k"){e.preventDefault();addLink();return;}
+      if(k==="x"&&e.shiftKey){e.preventDefault();cmd("strikeThrough");return;}
+      if(k==="enter"){
+        var pb=caretBlock(),pre=pb&&pb.closest("pre");
+        if(pre){
+          e.preventDefault();
+          var p=document.createElement("p");
+          p.appendChild(document.createElement("br"));
+          docEl.insertBefore(p,pre.nextSibling);
+          placeCaret(p,true);
+          touch();
+        }
+        return;
+      }
+      if(k==="b"||k==="i"||k==="u"){setTimeout(function(){touch();syncTools();},0);return;}
+      return;
+    }
+    if(e.key===" "){autoformat(e);return;}
+    if(e.key==="Enter"){
+      var blk=caretBlock();
+      if(!blk)return;
+      if(blk.closest("pre")){
+        e.preventDefault();
+        cmd("insertText","\n");
+        return;
+      }
+      if(/^H[1-6]$/.test(blk.nodeName)&&atBlockEnd(blk)){
+        e.preventDefault();
+        cmd("insertParagraph");
+        format("P");
+        return;
+      }
+      if(blk.closest("blockquote")&&(blk.textContent||"").trim()===""){
+        e.preventDefault();
+        cmd("outdent");
+        format("P");
+        return;
+      }
+      return;
+    }
+    if((e.key==="ArrowUp"||e.key==="ArrowDown")&&e.altKey){
+      var top=topBlock();
+      if(!top)return;
+      var sib=e.key==="ArrowUp"?top.previousElementSibling:top.nextElementSibling;
+      if(!sib)return;
+      e.preventDefault();
+      var inner=caretBlock();
+      if(e.key==="ArrowUp")docEl.insertBefore(top,sib);
+      else docEl.insertBefore(sib,top);
+      placeCaret(inner||top,false);
+      touch();
+    }
+  });
+
+  /* ── pegar: markdown o texto con formato ── */
+  docEl.addEventListener("paste",function(e){
+    var cd=e.clipboardData||window.clipboardData;
+    if(!cd)return;
+    var html=cd.getData("text/html"),plain=cd.getData("text/plain")||"",md=null;
+    if(html&&html.trim()){
+      try{
+        var parsed=new DOMParser().parseFromString(html,"text/html");
+        md=serialize(parsed.body);
+      }catch(err){md=null;}
+    }
+    if(!md||!md.trim())md=plain;
+    if(!md.trim())return;
+    e.preventDefault();
+    var multi=/\n/.test(md.replace(/\s+$/,""));
+    var marked=/^\s{0,3}(#{1,6}\s|>|[-*+]\s|\d+[.)]\s|```)/.test(md);
+    if(multi||marked){
+      cmd("insertHTML",mdToHtml(md));
+      say("importado como markdown");
+    }else{
+      cmd("insertHTML",inlineHtml(md.replace(/\n/g," ")));
+    }
+  });
+  titleEl.addEventListener("paste",function(e){
+    var cd=e.clipboardData||window.clipboardData;
+    if(!cd)return;
+    var t=(cd.getData("text/plain")||"").replace(/\s+/g," ").trim();
+    e.preventDefault();
+    try{document.execCommand("insertText",false,t);}catch(err){}
+  });
+  titleEl.addEventListener("keydown",function(e){
+    if(e.key==="Enter"){
+      e.preventDefault();
+      var first=docEl.firstElementChild;
+      if(first)placeCaret(first,true);
+      else docEl.focus();
+    }
+  });
+
+  /* ── entradas ───────────────────────── */
+  docEl.addEventListener("input",touch);
+  titleEl.addEventListener("input",function(){
+    document.getElementById("fname").textContent="▓ "+slug();
+    persist();
+  });
+  buf.addEventListener("mousedown",function(e){
+    if(e.target!==buf)return;
+    e.preventDefault();
+    placeCaret(docEl.lastElementChild,false);
+    if(!docEl.lastElementChild)docEl.focus();
+  });
+
+  /* ── descarga ───────────────────────── */
+  var raw=document.getElementById("raw");
+  function showRaw(md,note){
+    document.getElementById("rawText").textContent=md;
+    raw.setAttribute("data-open","true");
+    say(note);
+  }
+  document.getElementById("rawClose").addEventListener("click",function(){
+    raw.removeAttribute("data-open");
+  });
+  function download(md,name){
+    try{
+      var blob=new Blob([md],{type:"text/markdown;charset=utf-8"}),
+          url=URL.createObjectURL(blob),
+          a=document.createElement("a");
+      a.href=url;a.download=name;a.rel="noopener";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function(){
+        if(a.parentNode)a.parentNode.removeChild(a);
+        URL.revokeObjectURL(url);
+      },1500);
+      return true;
+    }catch(e){return false;}
+  }
+  function copyFallback(md,name){
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(md).then(function(){
+        say("descarga bloqueada — <b>"+name+"</b> copiado al portapapeles");
+      }).catch(function(){
+        showRaw(md,"descarga bloqueada — copia el texto de abajo");
+      });
+    }else{
+      showRaw(md,"descarga bloqueada — copia el texto de abajo");
+    }
+  }
+  function saveMd(){
+    var md=toMd(),name=slug();
+    if(download(md,name))say("guardado <b>"+name+"</b>");
+    else copyFallback(md,name);
+  }
+  document.getElementById("save").addEventListener("click",saveMd);
+  document.addEventListener("keydown",function(e){
+    if((e.metaKey||e.ctrlKey)&&(e.key||"").toLowerCase()==="s"){
+      e.preventDefault();
+      saveMd();
+    }
+  });
+
+  /* ── rm ─────────────────────────────── */
+  var wipe=document.getElementById("wipe"),armed=false,armT;
+  wipe.addEventListener("click",function(){
+    if(!armed){
+      armed=true;
+      wipe.textContent="rm ¿seguro?";
+      say("pulsa otra vez para borrar todo");
+      clearTimeout(armT);
+      armT=setTimeout(function(){armed=false;wipe.textContent="rm";say("");},4000);
+      return;
+    }
+    armed=false;
+    clearTimeout(armT);
+    wipe.textContent="rm";
+    titleEl.textContent="";
+    docEl.innerHTML="<p><br></p>";
+    touch();
+    placeCaret(docEl.firstElementChild,true);
+    say("documento vacío");
+  });
+
+  /* ── arranque ───────────────────────── */
+  var st=load();
+  titleEl.textContent=st?st.title:"";
+  docEl.innerHTML=st&&st.md?mdToHtml(st.md):"<p><br></p>";
+  var keysBox=document.getElementById("keys");
+  if(keysBox)keysBox.open=window.innerWidth>=480;
+  tally();
+  syncTools();
+})();
+</script>
+
+</body>
+</html>
