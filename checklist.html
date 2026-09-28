@@ -254,6 +254,56 @@
   .keys summary:hover{color:var(--accent)}
   .keys kbd{font:inherit;color:var(--ink)}
 
+  #files{
+    display:none;
+    padding:.5rem .6rem;
+    border-top:1px solid var(--rule);
+    background:var(--panel);
+  }
+  #files[data-open="true"]{display:block}
+  .files__acciones{
+    display:flex;
+    gap:.5ch;
+    flex-wrap:wrap;
+    margin-bottom:.55rem;
+  }
+  .files__titulo{
+    color:var(--faint);
+    font-size:.78em;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    padding-bottom:.15rem;
+  }
+  .files__item{
+    all:unset;
+    display:flex;
+    gap:1ch;
+    align-items:baseline;
+    width:100%;
+    box-sizing:border-box;
+    cursor:pointer;
+    font:inherit;
+    font-size:.9em;
+    color:var(--ink);
+    padding:.12rem .4ch;
+    border:1px solid transparent;
+  }
+  .files__item:hover{border-color:var(--accent);color:var(--accent)}
+  .files__nombre{
+    flex:1 1 auto;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .files__hace{color:var(--faint);white-space:nowrap;font-size:.9em}
+  .files__vacio,.files__nota{
+    color:var(--faint);
+    font-size:.85em;
+    padding:.15rem 0;
+  }
+  .files__nota{padding-top:.5rem}
+
   #raw{
     display:none;
     padding:.6rem;
@@ -281,6 +331,7 @@
     .bar{padding-inline:.42rem}
     .out{padding-inline:.42rem}
     .keys{padding-inline:.42rem}
+    #files{padding-inline:.42rem}
     .kill{padding-left:.6ch}
   }
   @media (max-width:20rem){
@@ -289,6 +340,7 @@
     .bar{padding-inline:.3rem}
     .out{padding-inline:.3rem}
     .keys{padding-inline:.3rem;padding-bottom:.6rem}
+    #files{padding-inline:.3rem}
     .kill{padding-left:.7ch}
     .line--h1 .txt{font-size:1.1em}
     .line--h2{margin-top:.7rem}
@@ -312,22 +364,36 @@
   <main class="buf" id="buf"></main>
 
   <footer>
+    <div id="files">
+      <div class="files__acciones">
+        <button class="btn" type="button" id="fOpen">abrir archivo…</button>
+        <button class="btn" type="button" id="fSaveAs">guardar como…</button>
+        <button class="btn" type="button" id="fCopy">descargar copia</button>
+        <span class="spacer"></span>
+        <button class="btn" type="button" id="fClose">cerrar</button>
+      </div>
+      <div class="files__titulo">recientes</div>
+      <div id="recientes"></div>
+      <div class="files__nota" id="fNota"></div>
+    </div>
     <div class="bar bar--btm">
       <button class="btn" id="addItem" title="Nueva tarea (Enter)">+ [ ]</button>
       <button class="btn" id="addSec" title="Nueva sección">+ ##</button>
       <span class="spacer"></span>
+      <button class="btn" type="button" id="archivo" title="Abrir un .md del disco, guardar como, recientes">archivo</button>
       <button class="btn btn--warn" id="wipe" title="Borrar todo">rm</button>
-      <button class="btn btn--go" id="save" title="Descargar .md">↓ .md</button>
+      <button class="btn btn--go" id="save" title="Guardar (Cmd+S)">↓ .md</button>
     </div>
     <div class="out" id="out"></div>
     <details class="keys" id="keys">
       <summary>teclas</summary>
-      <div><kbd>Enter</kbd> nueva línea · <kbd>Tab</kbd> tarea↔sección · <kbd>Backspace</kbd> borra la vacía · <kbd>Alt+↑↓</kbd> mover · <kbd>Cmd+Enter</kbd> marcar · pegar texto = importar lista</div>
+      <div><kbd>Enter</kbd> nueva línea · <kbd>Tab</kbd> tarea↔sección · <kbd>Backspace</kbd> borra la vacía · <kbd>Alt+↑↓</kbd> mover · <kbd>Cmd+Enter</kbd> marcar · <kbd>Cmd+S</kbd> guarda en el archivo · pegar texto = importar lista</div>
     </details>
     <div id="raw">
       <pre id="rawText"></pre>
       <button class="btn" id="rawClose">cerrar</button>
     </div>
+    <input type="file" id="fileInput" accept=".md,.markdown,.txt,text/markdown,text/plain" hidden>
   </footer>
 </div>
 
@@ -358,9 +424,13 @@
     }catch(e){return null;}
   }
   var saveT;
+  function guardarEstado(){
+    try{localStorage.setItem(KEY,JSON.stringify({title:doc.title,lines:doc.lines,sucio:sucio}));}catch(e){}
+  }
   function persist(){
+    marcarSucio();
     clearTimeout(saveT);
-    saveT=setTimeout(function(){try{localStorage.setItem(KEY,JSON.stringify(doc));}catch(e){}},250);
+    saveT=setTimeout(guardarEstado,250);
   }
 
   function idx(id){for(var i=0;i<doc.lines.length;i++)if(doc.lines[i].id===id)return i;return -1;}
@@ -410,7 +480,7 @@
     tx.setAttribute("aria-label","Título");
     tx.addEventListener("input",function(){
       doc.title=tx.textContent;
-      document.getElementById("fname").textContent="▓ "+slug();
+      pintarNombre();
       persist();
     });
     tx.addEventListener("keydown",function(e){
@@ -601,6 +671,217 @@
     sel.removeAllRanges();sel.addRange(r);
   }
 
+  /* ── archivos locales ─────────────────
+     Con la File System Access API se abre un .md del disco y Cmd+S escribe
+     en ESE mismo archivo, sin crear copias. Donde no existe (Safari, Firefox)
+     se importa con <input type=file> y al guardar se descarga una copia. */
+  var FS=!!(window.showOpenFilePicker&&window.showSaveFilePicker);
+  var DBN="chk.md.files";
+  var fileHandle=null,fileName="",fileMtime=0,sucio=false;
+  try{sucio=!!JSON.parse(localStorage.getItem(KEY)||"{}").sucio;}catch(e){}
+
+  function dbAbrir(){
+    return new Promise(function(res,rej){
+      var req=indexedDB.open(DBN,1);
+      req.onupgradeneeded=function(){req.result.createObjectStore("v");};
+      req.onsuccess=function(){res(req.result);};
+      req.onerror=function(){rej(req.error);};
+    });
+  }
+  function dbGet(k){
+    return dbAbrir().then(function(db){
+      return new Promise(function(res,rej){
+        var q=db.transaction("v","readonly").objectStore("v").get(k);
+        q.onsuccess=function(){res(q.result);};
+        q.onerror=function(){rej(q.error);};
+      });
+    }).catch(function(){return null;});
+  }
+  function dbSet(k,v){
+    return dbAbrir().then(function(db){
+      return new Promise(function(res,rej){
+        var q=db.transaction("v","readwrite").objectStore("v").put(v,k);
+        q.onsuccess=function(){res(true);};
+        q.onerror=function(){rej(q.error);};
+      });
+    }).catch(function(){return false;});
+  }
+  function recordarReciente(h,n){
+    return dbGet("recientes").then(function(lista){
+      lista=Array.isArray(lista)?lista:[];
+      lista=lista.filter(function(r){return r&&r.nombre!==n;});
+      lista.unshift({handle:h,nombre:n,at:Date.now()});
+      return dbSet("recientes",lista.slice(0,8));
+    }).then(function(){
+      return dbSet("actual",{handle:h,nombre:n});
+    });
+  }
+  function hace(ts){
+    var s=Math.max(0,(Date.now()-ts)/1000);
+    if(s<90)return "ahora";
+    if(s<3600)return "hace "+Math.round(s/60)+" min";
+    if(s<86400)return "hace "+Math.round(s/3600)+" h";
+    var d=Math.round(s/86400);
+    return d===1?"ayer":"hace "+d+" d";
+  }
+  function pintarNombre(){
+    var fn=document.getElementById("fname");
+    if(fn)fn.textContent="▓ "+(fileHandle&&sucio?"● ":"")+(fileHandle?fileName:slug());
+    var b=document.getElementById("save");
+    if(!b)return;
+    b.textContent=fileHandle?"guardar":(FS?"guardar…":"↓ .md");
+    b.title=fileHandle?("Guardar en "+fileName+" (Cmd+S)"):(FS?"Guardar como… (Cmd+S)":"Descargar .md (Cmd+S)");
+  }
+  function marcarSucio(){
+    if(!fileHandle||sucio)return;
+    sucio=true;
+    pintarNombre();
+  }
+  function cargarMd(txt){
+    var rows=String(txt).replace(/^\uFEFF/,"").split(/\r\n|\r|\n/),t="",lineas=[],i=0;
+    for(;i<rows.length;i++){
+      if(!rows[i].trim())continue;
+      var h=rows[i].match(/^\s*#\s+(.*)$/);
+      if(h){t=h[1].trim();i++;}
+      break;
+    }
+    for(;i<rows.length;i++){
+      if(!rows[i].trim())continue;
+      var pl=parseLine(rows[i]);
+      pl.id=uid();
+      lineas.push(pl);
+    }
+    if(!lineas.length)lineas=[{id:uid(),type:"item",text:"",done:false}];
+    doc={title:t,lines:lineas};
+    render();
+  }
+  function permiso(h){
+    if(!h||!h.queryPermission)return Promise.resolve(true);
+    return h.queryPermission({mode:"readwrite"}).then(function(p){
+      if(p==="granted")return true;
+      return h.requestPermission({mode:"readwrite"}).then(function(p2){return p2==="granted";});
+    });
+  }
+  function usarHandle(h){
+    return h.getFile().then(function(f){
+      return f.text().then(function(txt){
+        cargarMd(txt);
+        fileHandle=h;
+        fileName=f.name||h.name||"lista.md";
+        fileMtime=f.lastModified||0;
+        sucio=false;
+        pintarNombre();
+        guardarEstado();
+        cerrarPanel();
+        say("abierto <b>"+fileName+"</b>");
+        return recordarReciente(h,fileName);
+      });
+    });
+  }
+  function abrirArchivo(){
+    if(!FS){
+      var inp=document.getElementById("fileInput");
+      inp.value="";
+      inp.click();
+      return;
+    }
+    window.showOpenFilePicker({
+      multiple:false,
+      types:[{description:"Markdown",accept:{"text/markdown":[".md",".markdown"],"text/plain":[".txt"]}}]
+    }).then(function(hs){return usarHandle(hs[0]);}).catch(function(e){
+      if(e&&e.name==="AbortError")return;
+      say("no se pudo abrir: "+((e&&(e.message||e.name))||"error"));
+    });
+  }
+  function escribirEn(h,md){
+    /* si el archivo cambio fuera de aquí, preguntar antes de pisarlo */
+    return h.getFile().then(function(f){
+      if(fileMtime&&f.lastModified>fileMtime+1500&&
+         !window.confirm("El archivo cambió fuera de chk.md desde que lo abriste.\n\n¿Sobrescribirlo con lo que tienes aquí?")){
+        return Promise.reject({name:"AbortError"});
+      }
+      return h.createWritable();
+    }).then(function(w){
+      return w.write(md).then(function(){return w.close();});
+    }).then(function(){
+      return h.getFile().then(function(f2){fileMtime=f2.lastModified||0;});
+    });
+  }
+  function guardar(forzarDialogo){
+    var md=toMd();
+    if(!FS){
+      var n=fileName||slug();
+      if(download(md,n))say("este navegador no escribe en el archivo: se descargó <b>"+n+"</b>");
+      else copyFallback(md,n);
+      return;
+    }
+    var destino=(!forzarDialogo&&fileHandle)?Promise.resolve(fileHandle):window.showSaveFilePicker({
+      suggestedName:fileName||slug(),
+      types:[{description:"Markdown",accept:{"text/markdown":[".md"]}}]
+    });
+    destino.then(function(h){
+      /* archivo recien elegido: no hay fecha previa con que comparar */
+      if(h!==fileHandle)fileMtime=0;
+      return permiso(h).then(function(ok){
+        if(!ok){say("sin permiso para escribir en el archivo");return null;}
+        return escribirEn(h,md).then(function(){
+          fileHandle=h;
+          fileName=h.name||fileName||slug();
+          sucio=false;
+          pintarNombre();
+          guardarEstado();
+          say("guardado en <b>"+fileName+"</b>");
+          return recordarReciente(h,fileName);
+        });
+      });
+    }).catch(function(e){
+      if(e&&e.name==="AbortError")return;
+      say("no se pudo guardar: "+((e&&(e.message||e.name))||"error"));
+    });
+  }
+  function cerrarPanel(){
+    var p=document.getElementById("files");
+    if(p)p.removeAttribute("data-open");
+  }
+  function listarRecientes(){
+    var cont=document.getElementById("recientes");
+    cont.textContent="";
+    document.getElementById("fNota").textContent=FS?"":
+      "Este navegador no puede escribir en el archivo original: al guardar se descarga una copia. En Chrome, Edge o Helium sí escribe en el mismo archivo.";
+    if(!FS)return;
+    dbGet("recientes").then(function(lista){
+      if(!Array.isArray(lista)||!lista.length){
+        var v=document.createElement("div");
+        v.className="files__vacio";
+        v.textContent="todavía no has abierto archivos";
+        cont.appendChild(v);
+        return;
+      }
+      lista.forEach(function(r){
+        var b=document.createElement("button");
+        b.className="files__item";
+        b.type="button";
+        var n=document.createElement("span");
+        n.className="files__nombre";
+        n.textContent=r.nombre;
+        var t=document.createElement("span");
+        t.className="files__hace";
+        t.textContent=hace(r.at);
+        b.appendChild(n);
+        b.appendChild(t);
+        b.addEventListener("click",function(){
+          permiso(r.handle).then(function(ok){
+            if(!ok){say("sin permiso para abrir ese archivo");return null;}
+            return usarHandle(r.handle);
+          }).catch(function(){
+            say("no se pudo abrir <b>"+r.nombre+"</b> (¿se movió o se borró?)");
+          });
+        });
+        cont.appendChild(b);
+      });
+    });
+  }
+
   /* ── tally ──────────────────────────── */
   function tally(){
     var items=doc.lines.filter(function(l){return l.type==="item"&&(l.text||"").trim();});
@@ -608,7 +889,7 @@
     document.getElementById("count").textContent=done+"/"+items.length;
     var cells=8,fill=items.length?Math.round(done/items.length*cells):0,a="",b="";
     for(var i=0;i<cells;i++){if(i<fill)a+="█";else b+="\u00b7";}
-    document.getElementById("fname").textContent="▓ "+slug();
+    pintarNombre();
     document.getElementById("mFill").textContent=a;
     document.getElementById("mRest").textContent=b;
   }
@@ -647,10 +928,12 @@
       return true;
     }catch(e){return false;}
   }
-  document.getElementById("save").addEventListener("click",function(){
-    var md=toMd(),name=slug();
-    if(download(md,name))say("guardado <b>"+name+"</b>");
-    else copyFallback(md,name);
+  document.getElementById("save").addEventListener("click",function(){guardar(false);});
+  document.addEventListener("keydown",function(e){
+    if((e.metaKey||e.ctrlKey)&&(e.key||"").toLowerCase()==="s"){
+      e.preventDefault();
+      guardar(e.shiftKey);
+    }
   });
   function copyFallback(md,name){
     if(navigator.clipboard&&navigator.clipboard.writeText){
@@ -686,10 +969,86 @@
     persist();render("title",true);say("lista vacía");
   });
 
+  /* ── panel de archivo ───────────────── */
+  var panelBtn=document.getElementById("archivo");
+  panelBtn.addEventListener("click",function(){
+    var p=document.getElementById("files");
+    if(p.getAttribute("data-open")==="true"){cerrarPanel();return;}
+    p.setAttribute("data-open","true");
+    listarRecientes();
+  });
+  document.getElementById("fOpen").addEventListener("click",abrirArchivo);
+  document.getElementById("fSaveAs").addEventListener("click",function(){
+    cerrarPanel();
+    guardar(true);
+  });
+  document.getElementById("fCopy").addEventListener("click",function(){
+    var md=toMd(),n=fileName||slug();
+    cerrarPanel();
+    if(download(md,n))say("copia descargada: <b>"+n+"</b>");
+    else copyFallback(md,n);
+  });
+  document.getElementById("fClose").addEventListener("click",cerrarPanel);
+  document.getElementById("fileInput").addEventListener("change",function(e){
+    var f=e.target.files&&e.target.files[0];
+    if(f)leerArchivoSuelto(f);
+  });
+  function leerArchivoSuelto(f){
+    var r=new FileReader();
+    r.onload=function(){
+      cargarMd(String(r.result||""));
+      fileHandle=null;
+      fileName=f.name;
+      fileMtime=f.lastModified||0;
+      sucio=false;
+      pintarNombre();
+      guardarEstado();
+      cerrarPanel();
+      say("abierto <b>"+f.name+"</b> — al guardar se descarga una copia");
+    };
+    r.readAsText(f);
+  }
+  function tieneArchivos(e){
+    var t=e.dataTransfer&&e.dataTransfer.types;
+    if(!t)return false;
+    return Array.prototype.indexOf.call(t,"Files")>=0;
+  }
+  document.addEventListener("dragover",function(e){
+    if(tieneArchivos(e))e.preventDefault();
+  });
+  document.addEventListener("drop",function(e){
+    if(!tieneArchivos(e))return;
+    e.preventDefault();
+    var it=e.dataTransfer.items&&e.dataTransfer.items[0];
+    var f=e.dataTransfer.files&&e.dataTransfer.files[0];
+    if(it&&it.getAsFileSystemHandle){
+      it.getAsFileSystemHandle().then(function(h){
+        if(h&&h.kind==="file")return usarHandle(h);
+        if(f)leerArchivoSuelto(f);
+      }).catch(function(){if(f)leerArchivoSuelto(f);});
+      return;
+    }
+    if(f)leerArchivoSuelto(f);
+  });
+  window.addEventListener("beforeunload",function(e){
+    if(fileHandle&&sucio){e.preventDefault();e.returnValue="";}
+  });
+
   var keysBox=document.getElementById("keys");
   if(keysBox)keysBox.open=window.innerWidth>=480;
 
   render();
+  /* solo se recupera el vinculo si hay lista: con todo vacío, un Cmd+S
+     podría borrar el archivo del disco */
+  var hayContenido=!!((doc.title||"").trim()||doc.lines.some(function(l){return (l.text||"").trim();}));
+  if(FS&&hayContenido){
+    dbGet("actual").then(function(a){
+      if(!a||!a.handle)return;
+      fileHandle=a.handle;
+      fileName=a.nombre||"lista.md";
+      pintarNombre();
+    });
+  }
 })();
 </script>
 
