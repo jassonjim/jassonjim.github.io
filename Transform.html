@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Transform 4.4</title>
+    <title>Transform 4.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
@@ -181,6 +181,74 @@
             letter-spacing: 0.08em; color: var(--text-muted);
         }
 
+        /* ── CHECKLIST ── */
+        #checklistSection.hidden { display: none; }
+        #checklistToggle {
+            width: 100%;
+            display: flex; align-items: center; gap: 0.5rem;
+            background: var(--card); border: 1.5px solid var(--border);
+            border-radius: 10px; padding: 0.5rem 0.75rem;
+            cursor: pointer; transition: all 0.15s ease;
+            font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.08em; color: var(--text-muted);
+        }
+        #checklistToggle:hover { border-color: #a5b4fc; color: var(--primary); }
+        #checklistProgress {
+            margin-left: auto;
+            font-family: 'DM Mono', monospace; font-size: 0.6rem;
+            text-transform: none; letter-spacing: 0;
+            background: var(--primary-light); color: var(--primary);
+            padding: 0.1rem 0.4rem; border-radius: 4px;
+        }
+        #checklistBody {
+            max-height: 0; opacity: 0; overflow: hidden; margin-top: 0;
+            transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+        }
+        #checklistBody.open { max-height: 220px; opacity: 1; margin-top: 0.5rem; }
+
+        /* Cada zona/embotelladora/agencia es una COLUMNA; N y CR son las
+           dos FILAS de casillas. Con muchas columnas (24 agencias) la
+           tabla se desplaza en horizontal y la etiqueta N/CR queda fija. */
+        .cl-wrap {
+            border: 1.5px solid var(--border); border-radius: 10px;
+            overflow: hidden; background: var(--card);
+        }
+        .cl-scrollx { overflow-x: auto; }
+        table.cl-grid {
+            border-collapse: separate; border-spacing: 0;
+            width: max-content; min-width: 100%;
+        }
+        .cl-grid th, .cl-grid td { text-align: center; }
+        .cl-grid thead th {
+            font-family: 'DM Mono', monospace; font-size: 0.6rem; font-weight: 700;
+            color: #fff; background: #6b7280; white-space: nowrap;
+            padding: 0.34rem 0.5rem; border-bottom: 1.5px solid var(--border);
+        }
+        .cl-grid td { min-width: 42px; padding: 0.34rem 0.2rem; }
+        .cl-grid tbody tr:first-child td { border-bottom: 1px solid #f1f2f6; }
+        .cl-grid tbody tr:hover td { background: #fafbff; }
+        /* etiqueta de fila fija al hacer scroll horizontal */
+        .cl-lbl {
+            position: sticky; left: 0; z-index: 2;
+            background: #f8f9ff; color: var(--text-muted);
+            font-size: 0.62rem; font-weight: 800; letter-spacing: 0.06em;
+            padding: 0.34rem 0.7rem; text-align: left;
+            border-right: 1.5px solid var(--border);
+        }
+        .cl-grid tbody tr:first-child .cl-lbl { border-bottom: 1px solid #f1f2f6; }
+        .cl-corner {
+            position: sticky; left: 0; z-index: 3;
+            border-right: 1.5px solid var(--border);
+        }
+        .cl-tick {
+            width: 15px; height: 15px; margin: 0 auto;
+            cursor: pointer; accent-color: var(--primary);
+        }
+        .cl-foot {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 0.4rem; padding: 0 0.15rem;
+        }
+
         /* ── AGENCIAS · término no reconocido ── */
         .ag-bad {
             color: var(--danger); font-weight: 700;
@@ -241,7 +309,7 @@
             <h1 class="text-xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
                 <i class="fa-solid fa-bolt text-indigo-600 text-base"></i> Transform
             </h1>
-            <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded">v4.4</span>
+            <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded">v4.5</span>
         </div>
 
         <!-- Modos principales -->
@@ -336,6 +404,27 @@
             <div id="historyList" class="space-y-1.5"></div>
         </div>
 
+        <!-- Checklist · control manual por modo (N / CR) -->
+        <div id="checklistSection" class="hidden">
+            <button id="checklistToggle" onclick="toggleChecklist()">
+                <i class="fa-solid fa-list-check text-[11px]"></i>
+                <span>Checklist</span>
+                <span id="checklistProgress"></span>
+                <i class="fa-solid fa-chevron-down text-[9px] transition-transform duration-200" id="checklistIcon"></i>
+            </button>
+            <div id="checklistBody">
+                <div class="cl-wrap">
+                    <div class="cl-scrollx">
+                        <table class="cl-grid" id="checklistGrid"></table>
+                    </div>
+                </div>
+                <div class="cl-foot">
+                    <span class="text-[10px] text-gray-400 font-medium" id="checklistHint"></span>
+                    <button onclick="clearChecklist()" class="text-[10px] text-gray-400 hover:text-red-400 font-semibold transition-colors">Limpiar marcas</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Footer Disclaimer Discreto -->
@@ -384,6 +473,7 @@
             });
             inputEl.addEventListener('input', onInput);
             inputEl.focus();
+            renderChecklist();
             document.getElementById('toastCopyAgain').addEventListener('click', () => {
                 if (lastProcessed) copyToClipboard(lastProcessed, false);
             });
@@ -458,6 +548,7 @@
                 : 'Pega tu texto aquí (separado por ; o ,)...';
             updateItemCount();
             updatePreview();
+            renderChecklist();
             document.getElementById('inputText').focus();
         }
 
@@ -842,6 +933,132 @@
 
         function escapeHtml(str) {
             return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // CHECKLIST — control manual por modo (N / CR)
+        // Se adapta al modo activo: Embotelladoras, Zonas o Agencias. NO toca
+        // la transformación ni el campo de texto; es una lista de control
+        // independiente. Las marcas se guardan por modo en localStorage para
+        // que sobrevivan la recarga.
+        // ══════════════════════════════════════════════════════════════════
+        const CHECKLIST_STORE = 'transform.checklist.v1';
+        const CHECKLIST_TITULOS = {
+            embotelladores: 'Embotelladora',
+            zonas:          'Zona',
+            agencias:       'Agencia'
+        };
+        let checklistOpen = false;
+
+        // Nombre visible de cada zona: se invierte zonesMapping y gana la
+        // primera aparición, que es la variante acentuada.
+        function zonasChecklistItems() {
+            const nombre = {};
+            for (const [k, v] of Object.entries(zonesMapping)) {
+                if (!nombre[v]) nombre[v] = k;
+            }
+            return allZonesValues.map(code => ({ code, name: nombre[code] || code }));
+        }
+
+        function embotelladorasChecklistItems() {
+            return Object.entries(EMBOTELLADORAS_TABLA)
+                .map(([name, code]) => ({ code: code.replace(/\s+/g, '-'), name }));
+        }
+
+        function agenciasChecklistItems() {
+            return AGENCIAS_TABLA.map(a => ({ code: a.code, name: a.name }));
+        }
+
+        function checklistItems() {
+            switch (currentLogic) {
+                case 'embotelladores': return embotelladorasChecklistItems();
+                case 'zonas':          return zonasChecklistItems();
+                case 'agencias':       return agenciasChecklistItems();
+                default:               return [];   // mayúsculas / minúsculas
+            }
+        }
+
+        function checklistRead() {
+            try { return JSON.parse(localStorage.getItem(CHECKLIST_STORE) || '{}') || {}; }
+            catch (e) { return {}; }
+        }
+
+        function checklistWrite(data) {
+            try { localStorage.setItem(CHECKLIST_STORE, JSON.stringify(data)); }
+            catch (e) { /* storage bloqueado: se sigue, solo que sin persistir */ }
+        }
+
+        function checklistMarks() { return checklistRead()[currentLogic] || {}; }
+
+        function checklistSet(code, key, value) {
+            const all  = checklistRead();
+            const modo = all[currentLogic] || (all[currentLogic] = {});
+            const fila = modo[code] || (modo[code] = {});
+            fila[key] = value;
+            if (!fila.N && !fila.CR) delete modo[code];
+            checklistWrite(all);
+            renderChecklistProgress();
+        }
+
+        function clearChecklist() {
+            const all = checklistRead();
+            delete all[currentLogic];
+            checklistWrite(all);
+            renderChecklist();
+        }
+
+        function toggleChecklist() {
+            checklistOpen = !checklistOpen;
+            document.getElementById('checklistBody').classList.toggle('open', checklistOpen);
+            document.getElementById('checklistIcon').style.transform =
+                checklistOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
+        function renderChecklistProgress() {
+            const items = checklistItems();
+            const marks = checklistMarks();
+            const total = items.length;
+            const n  = items.filter(i => marks[i.code] && marks[i.code].N).length;
+            const cr = items.filter(i => marks[i.code] && marks[i.code].CR).length;
+            document.getElementById('checklistProgress').textContent =
+                `N ${n}/${total} · CR ${cr}/${total}`;
+        }
+
+        function renderChecklist() {
+            const section = document.getElementById('checklistSection');
+            const items = checklistItems();
+            if (!items.length) { section.classList.add('hidden'); return; }
+            section.classList.remove('hidden');
+
+            document.getElementById('checklistHint').textContent =
+                `${CHECKLIST_TITULOS[currentLogic] || ''} · ${items.length} en lista`;
+
+            const marks = checklistMarks();
+            const encabezado = items
+                .map(i => `<th title="${escapeHtml(i.name)}">${escapeHtml(i.code)}</th>`)
+                .join('');
+            const fila = key => items.map(i => {
+                const m = marks[i.code] || {};
+                return `<td><input type="checkbox" class="cl-tick"` +
+                       ` data-code="${escapeHtml(i.code)}" data-key="${key}"` +
+                       ` title="${escapeHtml(i.name)} · ${key}"` +
+                       `${m[key] ? ' checked' : ''}></td>`;
+            }).join('');
+
+            document.getElementById('checklistGrid').innerHTML = `
+                <thead><tr><th class="cl-corner"></th>${encabezado}</tr></thead>
+                <tbody>
+                    <tr><th class="cl-lbl">N</th>${fila('N')}</tr>
+                    <tr><th class="cl-lbl">CR</th>${fila('CR')}</tr>
+                </tbody>`;
+
+            document.querySelectorAll('#checklistGrid .cl-tick').forEach(cb => {
+                cb.addEventListener('change', () => {
+                    checklistSet(cb.dataset.code, cb.dataset.key, cb.checked);
+                });
+            });
+
+            renderChecklistProgress();
         }
 
         // ── Clipboard ──
